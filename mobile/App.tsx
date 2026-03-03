@@ -8,12 +8,15 @@ import {
   Inter_700Bold,
   useFonts
 } from '@expo-google-fonts/inter'
-import { store } from './src/store'
+import { PersistGate } from 'redux-persist/integration/react'
+import { persistor, store } from './src/store'
 import { AppNavigator } from './src/navigation/AppNavigator'
-import { bootstrapSession } from './src/slices/authSlice'
+import { bootstrapSession, forceLogout } from './src/slices/authSlice'
 import { useAppDispatch } from './src/hooks/useAppDispatch'
 import { useAppSelector } from './src/hooks/useAppSelector'
 import { SplashScreen } from './src/screens/auth/SplashScreen'
+import { setUnauthorizedHandler } from './src/services/api'
+import { setupPushNotificationsForUser } from './src/services/notificationService'
 
 const BootstrapGate = () => {
   const dispatch = useAppDispatch()
@@ -22,6 +25,22 @@ const BootstrapGate = () => {
   useEffect(() => {
     dispatch(bootstrapSession())
   }, [dispatch])
+
+  const user = useAppSelector((state) => state.auth.user)
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      dispatch(forceLogout())
+    })
+
+    return () => {
+      setUnauthorizedHandler(null)
+    }
+  }, [dispatch])
+
+  useEffect(() => {
+    setupPushNotificationsForUser(Boolean(user))
+  }, [user])
 
   if (initializing) {
     return <SplashScreen />
@@ -45,7 +64,9 @@ export default function App() {
   return (
     <Provider store={store}>
       <StatusBar style='dark' />
-      <BootstrapGate />
+      <PersistGate loading={<SplashScreen />} persistor={persistor}>
+        <BootstrapGate />
+      </PersistGate>
     </Provider>
   )
 }
