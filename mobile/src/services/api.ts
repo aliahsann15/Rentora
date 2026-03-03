@@ -47,5 +47,9 @@ export interface RequestItem {
   description: string
   status: 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'DONE' | 'VERIFIED'
   urgency: 'LOW' | 'MEDIUM' | 'HIGH'
+  tenantId?: string
+  vendorId?: string
+  propertyId?: string
+  unitId?: string
   createdAt: string
 }

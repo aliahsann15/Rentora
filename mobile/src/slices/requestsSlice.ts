@@ -1,6 +1,13 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { api, RequestItem } from '../services/api'
-import { RootState } from '../store'
+
+interface RequestsThunkState {
+  auth: {
+    user: {
+      _id: string
+    } | null
+  }
+}
 
 interface RequestsState {
   items: RequestItem[]
@@ -42,7 +49,7 @@ export const createMaintenanceRequest = createAsyncThunk(
     { getState, rejectWithValue }
   ) => {
     try {
-      const state = getState() as RootState
+      const state = getState() as RequestsThunkState
       const currentUser = state.auth.user
 
       if (!currentUser) {
