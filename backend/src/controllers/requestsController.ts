@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { MaintenanceRequest } from '../models'
+import { MaintenanceRequest, User, Vendor } from '../models'
 import {
   addRequestImagesWithRules,
   assignVendorWithRules,
@@ -7,6 +7,7 @@ import {
   getScopedRequestFilter,
   updateStatusWithRules
 } from '../services/requestStatusService'
+import { createNotificationsAndPush } from '../services/pushNotificationService'
 
 const readCurrentUser = (req: Request) => {
   if (!req.user) {
@@ -91,6 +92,24 @@ export const createRequest = async (req: Request, res: Response): Promise<Respon
       urgency: urgency || 'MEDIUM'
     }, currentUser)
 
+    const landlords = await User.find({
+      organizationId: currentUser.organizationId,
+      role: 'LANDLORD',
+      isActive: true
+    }).select('_id')
+
+    try {
+      await createNotificationsAndPush({
+        userIds: landlords.map((landlord) => landlord._id.toString()),
+        organizationId: currentUser.organizationId,
+        title: 'New request',
+        body: request.title,
+        type: 'REQUEST_NEW',
+        referenceId: request._id.toString(),
+        data: { requestId: request._id.toString() }
+      })
+    } catch {}
+
     return res.status(201).json(request)
   } catch (error) {
     return res.status(400).json({ message: 'Failed to create request', error })
@@ -123,6 +142,27 @@ export const updateRequestStatus = async (req: Request, res: Response): Promise<
     const requestId = readRequestId(req)
     const request = await updateStatusWithRules(requestId, status, currentUser)
 
+    const landlords = await User.find({
+      organizationId: currentUser.organizationId,
+      role: 'LANDLORD',
+      isActive: true
+    }).select('_id')
+
+    const recipients = [request.tenantId?.toString(), ...landlords.map((landlord) => landlord._id.toString())]
+      .filter(Boolean) as string[]
+
+    try {
+      await createNotificationsAndPush({
+        userIds: recipients,
+        organizationId: currentUser.organizationId,
+        title: 'Request status updated',
+        body: `${request.title} is now ${request.status}`,
+        type: 'REQUEST_STATUS_CHANGED',
+        referenceId: request._id.toString(),
+        data: { requestId: request._id.toString(), status: request.status }
+      })
+    } catch {}
+
     return res.status(200).json(request)
   } catch (error) {
     return res.status(400).json({ message: 'Failed to update request status', error })
@@ -139,6 +179,22 @@ export const assignRequestVendor = async (req: Request, res: Response): Promise<
 
     const requestId = readRequestId(req)
     const request = await assignVendorWithRules(requestId, vendorId, currentUser)
+
+    const assignedVendor = await Vendor.findById(vendorId).select('userId')
+
+    if (assignedVendor?.userId) {
+      try {
+        await createNotificationsAndPush({
+          userIds: [assignedVendor.userId.toString()],
+          organizationId: currentUser.organizationId,
+          title: 'New assignment',
+          body: request.title,
+          type: 'REQUEST_ASSIGNED',
+          referenceId: request._id.toString(),
+          data: { requestId: request._id.toString() }
+        })
+      } catch {}
+    }
 
     return res.status(200).json(request)
   } catch (error) {
