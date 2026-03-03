@@ -5,6 +5,7 @@ import { LandlordNavigator } from './LandlordNavigator'
 import { TenantNavigator } from './TenantNavigator'
 import { VendorNavigator } from './VendorNavigator'
 import { useAppSelector } from '../hooks/useAppSelector'
+import { ROUTES } from './routes'
 
 const Stack = createNativeStackNavigator<AppStackParamList>()
 
@@ -26,20 +27,20 @@ export const AppStackNavigator = () => {
       }}
     >
       {user?.role === 'LANDLORD' && (
-        <Stack.Screen name="LandlordTabs" component={LandlordNavigator} />
+        <Stack.Screen name={ROUTES.LANDLORD_TABS} component={LandlordNavigator} />
       )}
 
       {user?.role === 'TENANT' && (
-        <Stack.Screen name="TenantTabs" component={TenantNavigator} />
+        <Stack.Screen name={ROUTES.TENANT_TABS} component={TenantNavigator} />
       )}
 
       {user?.role === 'VENDOR' && (
-        <Stack.Screen name="VendorTabs" component={VendorNavigator} />
+        <Stack.Screen name={ROUTES.VENDOR_TABS} component={VendorNavigator} />
       )}
 
       {/* Fallback: If role is not recognized, show error screen */}
       {!user || !['LANDLORD', 'TENANT', 'VENDOR'].includes(user.role) && (
-        <Stack.Screen name="LandlordTabs" component={LandlordNavigator} />
+        <Stack.Screen name={ROUTES.LANDLORD_TABS} component={LandlordNavigator} />
       )}
     </Stack.Navigator>
   )

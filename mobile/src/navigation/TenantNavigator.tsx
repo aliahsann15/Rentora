@@ -12,6 +12,7 @@ import { screenOptions, defaultTabOptions } from './screenOptions'
 import { MyRequestsScreen } from '../screens/tenant/MyRequestsScreen'
 import { TenantRequestDetailsScreen } from '../screens/tenant/TenantRequestDetailsScreen'
 import { NewRequestScreen } from '../screens/tenant/NewRequestScreen'
+import { ROUTES } from './routes'
 
 const Tab = createBottomTabNavigator<TenantTabParamList>()
 const RequestStackNavigator = createNativeStackNavigator<TenantRequestsStackParamList>()
@@ -24,14 +25,14 @@ const RequestDetailsStack = () => {
   return (
     <RequestStackNavigator.Navigator screenOptions={screenOptions.requestDetail}>
       <RequestStackNavigator.Screen
-        name="MyRequestsList"
+        name={ROUTES.MY_REQUESTS_LIST}
         component={MyRequestsScreen}
         options={{
           title: 'My Requests'
         }}
       />
       <RequestStackNavigator.Screen
-        name="TenantRequestDetails"
+        name={ROUTES.TENANT_REQUEST_DETAILS}
         component={TenantRequestDetailsScreen}
         options={{
           title: 'Request Details'
@@ -59,9 +60,9 @@ const ProfileTabScreen = () => <ProfileScreen role="TENANT" />
 export const TenantNavigator = () => {
   const accentColor = getRoleAccent('TENANT')
   const tabIcons: Record<keyof TenantTabParamList, string> = {
-    MyRequests: 'construct-outline',
-    NewRequest: 'add-circle-outline',
-    Profile: 'settings-outline'
+    [ROUTES.MY_REQUESTS]: 'construct-outline',
+    [ROUTES.NEW_REQUEST]: 'add-circle-outline',
+    [ROUTES.PROFILE]: 'settings-outline'
   }
 
   return (
@@ -76,7 +77,7 @@ export const TenantNavigator = () => {
       })}
     >
       <Tab.Screen
-        name="MyRequests"
+        name={ROUTES.MY_REQUESTS}
         component={RequestDetailsStack}
         options={{
           title: 'My Requests',
@@ -85,7 +86,7 @@ export const TenantNavigator = () => {
       />
 
       <Tab.Screen
-        name="NewRequest"
+        name={ROUTES.NEW_REQUEST}
         component={NewRequestScreen}
         options={{
           title: 'New Request'
@@ -93,7 +94,7 @@ export const TenantNavigator = () => {
       />
 
       <Tab.Screen
-        name="Profile"
+        name={ROUTES.PROFILE}
         component={ProfileTabScreen}
         options={{
           title: 'Profile'

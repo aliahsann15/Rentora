@@ -11,6 +11,7 @@ import {
 import { screenOptions, defaultTabOptions } from './screenOptions'
 import { AssignedRequestsScreen } from '../screens/vendor/AssignedRequestsScreen'
 import { VendorRequestDetailsScreen } from '../screens/vendor/VendorRequestDetailsScreen'
+import { ROUTES } from './routes'
 
 const Tab = createBottomTabNavigator<VendorTabParamList>()
 const RequestStackNavigator = createNativeStackNavigator<VendorRequestsStackParamList>()
@@ -23,14 +24,14 @@ const RequestDetailsStack = () => {
   return (
     <RequestStackNavigator.Navigator screenOptions={screenOptions.requestDetail}>
       <RequestStackNavigator.Screen
-        name="AssignedRequestsList"
+        name={ROUTES.ASSIGNED_REQUESTS_LIST}
         component={AssignedRequestsScreen}
         options={{
           title: 'Assigned Requests'
         }}
       />
       <RequestStackNavigator.Screen
-        name="VendorRequestDetails"
+        name={ROUTES.VENDOR_REQUEST_DETAILS}
         component={VendorRequestDetailsScreen}
         options={{
           title: 'Request Details'
@@ -54,8 +55,8 @@ const ProfileTabScreen = () => <ProfileScreen role="VENDOR" />
 export const VendorNavigator = () => {
   const accentColor = getRoleAccent('VENDOR')
   const tabIcons: Record<keyof VendorTabParamList, string> = {
-    AssignedRequests: 'construct-outline',
-    Profile: 'settings-outline'
+    [ROUTES.ASSIGNED_REQUESTS]: 'construct-outline',
+    [ROUTES.PROFILE]: 'settings-outline'
   }
 
   return (
@@ -70,7 +71,7 @@ export const VendorNavigator = () => {
       })}
     >
       <Tab.Screen
-        name="AssignedRequests"
+        name={ROUTES.ASSIGNED_REQUESTS}
         component={RequestDetailsStack}
         options={{
           title: 'Assigned Requests',
@@ -79,7 +80,7 @@ export const VendorNavigator = () => {
       />
 
       <Tab.Screen
-        name="Profile"
+        name={ROUTES.PROFILE}
         component={ProfileTabScreen}
         options={{
           title: 'Profile'

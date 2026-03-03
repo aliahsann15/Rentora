@@ -8,15 +8,17 @@ import {
   Inter_700Bold,
   useFonts
 } from '@expo-google-fonts/inter'
+import { NavigationContainer } from '@react-navigation/native'
 import { PersistGate } from 'redux-persist/integration/react'
 import { persistor, store } from './src/store'
-import { AppNavigator } from './src/navigation/AppNavigator'
+import { RootNavigator } from './src/navigation/RootNavigator'
 import { bootstrapSession, forceLogout } from './src/slices/authSlice'
 import { useAppDispatch } from './src/hooks/useAppDispatch'
 import { useAppSelector } from './src/hooks/useAppSelector'
 import { SplashScreen } from './src/screens/auth/SplashScreen'
 import { setUnauthorizedHandler } from './src/services/api'
 import { setupPushNotificationsForUser } from './src/services/notificationService'
+import { DeepLinkingConfig } from './src/constants/navigationConstants'
 
 const BootstrapGate = () => {
   const dispatch = useAppDispatch()
@@ -46,7 +48,7 @@ const BootstrapGate = () => {
     return <SplashScreen />
   }
 
-  return <AppNavigator />
+  return <RootNavigator />
 }
 
 export default function App() {
@@ -65,7 +67,9 @@ export default function App() {
     <Provider store={store}>
       <StatusBar style='dark' />
       <PersistGate loading={<SplashScreen />} persistor={persistor}>
-        <BootstrapGate />
+        <NavigationContainer linking={DeepLinkingConfig} fallback={null}>
+          <BootstrapGate />
+        </NavigationContainer>
       </PersistGate>
     </Provider>
   )

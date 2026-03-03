@@ -6,6 +6,7 @@ import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen'
 import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen'
 import { InviteRegistrationScreen } from '../screens/auth/InviteRegistrationScreen'
 import { AuthStackParamList } from './types'
+import { ROUTES } from './routes'
 
 const Stack = createNativeStackNavigator<AuthStackParamList>()
 
@@ -22,11 +23,11 @@ export const AuthNavigator = () => {
         contentStyle: { backgroundColor: '#1E3A8A' }
       }}
     >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-      <Stack.Screen name="InviteRegistration" component={InviteRegistrationScreen} />
+      <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />
+      <Stack.Screen name={ROUTES.REGISTER} component={RegisterScreen} />
+      <Stack.Screen name={ROUTES.FORGOT_PASSWORD} component={ForgotPasswordScreen} />
+      <Stack.Screen name={ROUTES.RESET_PASSWORD} component={ResetPasswordScreen} />
+      <Stack.Screen name={ROUTES.INVITE_REGISTRATION} component={InviteRegistrationScreen} />
     </Stack.Navigator>
   )
 }

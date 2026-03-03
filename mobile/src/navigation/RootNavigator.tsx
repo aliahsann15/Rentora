@@ -1,11 +1,10 @@
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { NavigationContainer } from '@react-navigation/native'
 import { RootStackParamList } from './types'
 import { AuthNavigator } from './AuthNavigator'
 import { AppStackNavigator } from './AppStackNavigator'
 import { useAppSelector } from '../hooks/useAppSelector'
-import { DeepLinkingConfig } from '../constants/navigationConstants'
+import { ROUTES } from './routes'
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
@@ -29,33 +28,26 @@ export const RootNavigator = () => {
     }
 
     return (
-        <NavigationContainer
-            linking={DeepLinkingConfig}
-            fallback={null}
+        <Stack.Navigator
+            screenOptions={{
+                headerShown: false,
+                animation: 'none',
+                contentStyle: { backgroundColor: '#FFFFFF' }
+            }}
         >
-            <Stack.Navigator
-                screenOptions={{
-                    headerShown: false,
-                    animation: 'none',
-                    contentStyle: { backgroundColor: '#FFFFFF' }
-                }}
-            >
-                {user ? (
-                    // User is authenticated: Show role-based app stacks
-                    <Stack.Screen
-                        name="App"
-                        component={AppStackNavigator}
-                        options={{ animation: 'none' }}
-                    />
-                ) : (
-                    // User is not authenticated: Show auth stack
-                    <Stack.Screen
-                        name="Auth"
-                        component={AuthNavigator}
-                        options={{ animation: 'none' }}
-                    />
-                )}
-            </Stack.Navigator>
-        </NavigationContainer>
+            {user ? (
+                <Stack.Screen
+                    name={ROUTES.APP}
+                    component={AppStackNavigator}
+                    options={{ animation: 'none' }}
+                />
+            ) : (
+                <Stack.Screen
+                    name={ROUTES.AUTH}
+                    component={AuthNavigator}
+                    options={{ animation: 'none' }}
+                />
+            )}
+        </Stack.Navigator>
     )
 }

@@ -23,6 +23,7 @@ import { UsersListScreen } from '../screens/landlord/UsersListScreen'
 import { InviteUserScreen } from '../screens/landlord/InviteUserScreen'
 import { VendorDetailsScreen } from '../screens/landlord/VendorDetailsScreen'
 import { SettingsScreen } from '../screens/landlord/SettingsScreen'
+import { ROUTES } from './routes'
 
 const Tab = createBottomTabNavigator<LandlordTabParamList>()
 const RequestsStack = createNativeStackNavigator<LandlordRequestsStackParamList>()
@@ -32,9 +33,9 @@ const UsersStack = createNativeStackNavigator<LandlordUsersStackParamList>()
 const RequestsNavigator = () => {
   return (
     <RequestsStack.Navigator>
-      <RequestsStack.Screen name="RequestsList" component={RequestsListScreen} options={{ title: 'Requests' }} />
-      <RequestsStack.Screen name="RequestDetails" component={RequestDetailsScreen} options={{ title: 'Request Details' }} />
-      <RequestsStack.Screen name="AssignVendor" component={AssignVendorScreen} options={{ title: 'Assign Vendor' }} />
+      <RequestsStack.Screen name={ROUTES.REQUESTS_LIST} component={RequestsListScreen} options={{ title: 'Requests' }} />
+      <RequestsStack.Screen name={ROUTES.REQUEST_DETAILS} component={RequestDetailsScreen} options={{ title: 'Request Details' }} />
+      <RequestsStack.Screen name={ROUTES.ASSIGN_VENDOR} component={AssignVendorScreen} options={{ title: 'Assign Vendor' }} />
     </RequestsStack.Navigator>
   )
 }
@@ -42,11 +43,11 @@ const RequestsNavigator = () => {
 const PropertiesNavigator = () => {
   return (
     <PropertiesStack.Navigator>
-      <PropertiesStack.Screen name="PropertiesList" component={PropertiesListScreen} options={{ title: 'Properties' }} />
-      <PropertiesStack.Screen name="AddProperty" component={AddPropertyScreen} options={{ title: 'Add Property' }} />
-      <PropertiesStack.Screen name="PropertyDetails" component={PropertyDetailsScreen} options={{ title: 'Property Details' }} />
-      <PropertiesStack.Screen name="AddUnit" component={AddUnitScreen} options={{ title: 'Add Unit' }} />
-      <PropertiesStack.Screen name="EditUnit" component={EditUnitScreen} options={{ title: 'Edit Unit' }} />
+      <PropertiesStack.Screen name={ROUTES.PROPERTIES_LIST} component={PropertiesListScreen} options={{ title: 'Properties' }} />
+      <PropertiesStack.Screen name={ROUTES.ADD_PROPERTY} component={AddPropertyScreen} options={{ title: 'Add Property' }} />
+      <PropertiesStack.Screen name={ROUTES.PROPERTY_DETAILS} component={PropertyDetailsScreen} options={{ title: 'Property Details' }} />
+      <PropertiesStack.Screen name={ROUTES.ADD_UNIT} component={AddUnitScreen} options={{ title: 'Add Unit' }} />
+      <PropertiesStack.Screen name={ROUTES.EDIT_UNIT} component={EditUnitScreen} options={{ title: 'Edit Unit' }} />
     </PropertiesStack.Navigator>
   )
 }
@@ -54,9 +55,9 @@ const PropertiesNavigator = () => {
 const UsersNavigator = () => {
   return (
     <UsersStack.Navigator>
-      <UsersStack.Screen name="UsersList" component={UsersListScreen} options={{ title: 'Users' }} />
-      <UsersStack.Screen name="InviteUser" component={InviteUserScreen} options={{ title: 'Invite User' }} />
-      <UsersStack.Screen name="VendorDetails" component={VendorDetailsScreen} options={{ title: 'Vendor Details' }} />
+      <UsersStack.Screen name={ROUTES.USERS_LIST} component={UsersListScreen} options={{ title: 'Users' }} />
+      <UsersStack.Screen name={ROUTES.INVITE_USER} component={InviteUserScreen} options={{ title: 'Invite User' }} />
+      <UsersStack.Screen name={ROUTES.VENDOR_DETAILS} component={VendorDetailsScreen} options={{ title: 'Vendor Details' }} />
     </UsersStack.Navigator>
   )
 }
@@ -72,22 +73,22 @@ export const LandlordNavigator = () => {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarIcon: ({ color, size }) => {
           const icons: Record<string, string> = {
-            Dashboard: 'grid-outline',
-            Requests: 'construct-outline',
-            Properties: 'business-outline',
-            Users: 'people-outline',
-            Settings: 'settings-outline'
+            [ROUTES.DASHBOARD]: 'grid-outline',
+            [ROUTES.REQUESTS]: 'construct-outline',
+            [ROUTES.PROPERTIES]: 'business-outline',
+            [ROUTES.USERS]: 'people-outline',
+            [ROUTES.SETTINGS]: 'settings-outline'
           }
 
           return <Ionicons name={(icons[route.name] || 'help-outline') as any} size={size} color={color} />
         }
       })}
     >
-      <Tab.Screen name="Dashboard" component={LandlordDashboardScreen} />
-      <Tab.Screen name="Requests" component={RequestsNavigator} options={{ headerShown: false }} />
-      <Tab.Screen name="Properties" component={PropertiesNavigator} options={{ headerShown: false }} />
-      <Tab.Screen name="Users" component={UsersNavigator} options={{ headerShown: false }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen name={ROUTES.DASHBOARD} component={LandlordDashboardScreen} />
+      <Tab.Screen name={ROUTES.REQUESTS} component={RequestsNavigator} options={{ headerShown: false }} />
+      <Tab.Screen name={ROUTES.PROPERTIES} component={PropertiesNavigator} options={{ headerShown: false }} />
+      <Tab.Screen name={ROUTES.USERS} component={UsersNavigator} options={{ headerShown: false }} />
+      <Tab.Screen name={ROUTES.SETTINGS} component={SettingsScreen} />
     </Tab.Navigator>
   )
 }
