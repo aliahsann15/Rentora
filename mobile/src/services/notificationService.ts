@@ -28,7 +28,18 @@ const getProjectId = (): string | undefined => {
   return undefined
 }
 
+const isExpoGo = (): boolean => {
+  const appOwnership = (Constants as any)?.appOwnership
+  const executionEnvironment = (Constants as any)?.executionEnvironment
+
+  return appOwnership === 'expo' || executionEnvironment === 'storeClient'
+}
+
 const registerDevice = async (): Promise<string | null> => {
+  if (isExpoGo()) {
+    return null
+  }
+
   const permissions = await Notifications.getPermissionsAsync()
   let finalStatus = permissions.status
 
@@ -53,7 +64,14 @@ export const setupPushNotificationsForUser = async (isAuthenticated: boolean) =>
     return
   }
 
-  const token = await registerDevice()
+  let token: string | null = null
+
+  try {
+    token = await registerDevice()
+  } catch {
+    return
+  }
+
   if (!token) {
     return
   }
