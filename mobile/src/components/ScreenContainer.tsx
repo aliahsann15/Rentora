@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
-import { SafeAreaView, ScrollView, StyleSheet, ViewStyle } from 'react-native'
+import { Platform, ScrollView, StyleSheet, View, ViewStyle } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '../utils/theme'
 
 interface ScreenContainerProps {
@@ -9,14 +10,16 @@ interface ScreenContainerProps {
 }
 
 export const ScreenContainer = ({ children, scrollable = true, style }: ScreenContainerProps) => {
+  const RootWrapper = Platform.OS === 'android' ? SafeAreaView : View
+
   if (!scrollable) {
-    return <SafeAreaView style={[styles.root, style]}>{children}</SafeAreaView>
+    return <RootWrapper style={[styles.root, style]}>{children}</RootWrapper>
   }
 
   return (
-    <SafeAreaView style={styles.root}>
+    <RootWrapper style={styles.root}>
       <ScrollView contentContainerStyle={[styles.content, style]}>{children}</ScrollView>
-    </SafeAreaView>
+    </RootWrapper>
   )
 }
 
