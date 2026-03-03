@@ -7,6 +7,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch'
 import { useAppSelector } from '../../hooks/useAppSelector'
 import { clearAuthError, clearAuthInfoMessage, resetPassword } from '../../slices/authSlice'
 import { AuthStackParamList } from '../../navigation/types'
+import { ROUTES } from '../../navigation/routes'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ResetPassword'>
@@ -25,7 +26,7 @@ export const ResetPasswordScreen = ({ route, navigation }: Props) => {
 
     const action = await dispatch(resetPassword({ token, password }))
     if (resetPassword.fulfilled.match(action)) {
-      navigation.navigate('Login')
+      navigation.navigate(ROUTES.LOGIN)
     }
   }
 

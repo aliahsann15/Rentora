@@ -7,6 +7,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch'
 import { useAppSelector } from '../../hooks/useAppSelector'
 import { clearAuthError, login } from '../../slices/authSlice'
 import { AuthStackParamList } from '../../navigation/types'
+import { ROUTES } from '../../navigation/routes'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>
@@ -61,11 +62,11 @@ export const LoginScreen = ({ navigation }: Props) => {
 
         <AppButton title='Login' onPress={onSubmit} loading={loading} />
 
-        <Pressable onPress={() => navigation.navigate('ForgotPassword')}>
+        <Pressable onPress={() => navigation.navigate(ROUTES.FORGOT_PASSWORD)}>
           <Text style={styles.link}>Forgot Password</Text>
         </Pressable>
 
-        <Pressable onPress={() => navigation.navigate('Register')}>
+        <Pressable onPress={() => navigation.navigate(ROUTES.REGISTER)}>
           <Text style={styles.link}>Register</Text>
         </Pressable>
       </View>
