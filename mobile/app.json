@@ -27,7 +27,12 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "@stripe/stripe-react-native"
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.rentora"
+        }
+      ]
     ]
   }
 }
