@@ -1,7 +1,13 @@
 import axios from 'axios'
 import { getAccessToken, removeTokens } from './authStorage'
 
-const API_BASE_URL = 'http://192.168.100.141:5000/api'
+export const API_BASE_URL = 'http://192.168.100.141:5000/api'
+
+let onUnauthorized: (() => void) | null = null
+
+export const setUnauthorizedHandler = (handler: (() => void) | null) => {
+  onUnauthorized = handler
+}
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -23,6 +29,9 @@ api.interceptors.response.use(
   async (error) => {
     if (error?.response?.status === 401) {
       await removeTokens()
+      if (onUnauthorized) {
+        onUnauthorized()
+      }
     }
 
     return Promise.reject(error)
