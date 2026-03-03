@@ -3,14 +3,50 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
+import rateLimit from 'express-rate-limit'
+import mongoSanitize from 'express-mongo-sanitize'
 import { apiRouter } from './routes'
 import { errorHandler } from './middlewares/errorHandler'
+import { webhooksRoutes } from './routes/webhooksRoutes'
 
 const app: Application = express()
 
-app.use(cors())
+const allowedOrigins = (process.env.CORS_WHITELIST || 'http://localhost:8081,http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      callback(null, true)
+      return
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true)
+      return
+    }
+
+    callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true
+}
+
+const globalRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX || 150),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests, please try again later.' }
+})
+
+app.use('/api/webhooks', webhooksRoutes)
+app.use(cors(corsOptions))
 app.use(helmet())
+app.use(globalRateLimiter)
 app.use(express.json())
+app.use(mongoSanitize())
 app.use(cookieParser())
 app.use(morgan('dev'))
 app.use('/api', apiRouter)

@@ -56,7 +56,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
       return res.status(409).json({ message: 'User already exists' })
     }
 
-    const passwordHash = await bcrypt.hash(password, 10)
+    const passwordHash = await bcrypt.hash(password, 12)
 
     let user = await User.create({
       name,

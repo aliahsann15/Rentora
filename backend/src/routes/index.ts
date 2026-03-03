@@ -9,7 +9,6 @@ import { subscriptionsRoutes } from './subscriptionsRoutes'
 import { unitsRoutes } from './unitsRoutes'
 import { usersRoutes } from './usersRoutes'
 import { vendorsRoutes } from './vendorsRoutes'
-import { webhooksRoutes } from './webhooksRoutes'
 import { authenticateJWT } from '../middlewares/authenticateJWT'
 import { attachOrganization } from '../middlewares/attachOrganization'
 import { requireRole } from '../middlewares/requireRole'
@@ -27,6 +26,5 @@ apiRouter.use('/vendors', authenticateJWT, attachOrganization, requireSubscripti
 apiRouter.use('/invites', invitesRoutes)
 apiRouter.use('/notifications', authenticateJWT, attachOrganization, requireSubscriptionActive, notificationsRoutes)
 apiRouter.use('/subscriptions', authenticateJWT, attachOrganization, subscriptionsRoutes)
-apiRouter.use('/webhooks', webhooksRoutes)
 
 export { apiRouter }

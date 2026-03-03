@@ -82,7 +82,7 @@ export const acceptInvite = async (req: Request, res: Response): Promise<Respons
       return res.status(409).json({ message: 'User already exists' })
     }
 
-    const passwordHash = await bcrypt.hash(password, 10)
+    const passwordHash = await bcrypt.hash(password, 12)
 
     const user = await User.create({
       name,

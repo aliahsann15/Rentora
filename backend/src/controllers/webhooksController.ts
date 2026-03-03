@@ -17,6 +17,10 @@ export const handleStripeWebhook = async (req: Request, res: Response): Promise<
       return res.status(400).json({ message: 'Missing stripe-signature header' })
     }
 
+    if (!Buffer.isBuffer(req.body)) {
+      return res.status(400).json({ message: 'Invalid webhook payload format' })
+    }
+
     const event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret)
 
     if (event.type === 'invoice.paid') {
