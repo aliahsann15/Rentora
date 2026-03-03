@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { api, AuthResponse } from '../services/api'
-import { removeTokens, setTokens } from '../services/authStorage'
+import { getRefreshToken, removeTokens, setTokens } from '../services/authStorage'
 
 interface AuthUser {
   _id: string
@@ -15,13 +15,15 @@ interface AuthState {
   loading: boolean
   initializing: boolean
   error: string | null
+  infoMessage: string | null
 }
 
 const initialState: AuthState = {
   user: null,
   loading: false,
   initializing: true,
-  error: null
+  error: null,
+  infoMessage: null
 }
 
 export const login = createAsyncThunk(
@@ -73,9 +75,74 @@ export const bootstrapSession = createAsyncThunk(
   }
 )
 
+export const forgotPassword = createAsyncThunk(
+  'auth/forgotPassword',
+  async (payload: { email: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post<{ message: string; resetToken?: string }>('/auth/forgot-password', payload)
+      return response.data
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      return rejectWithValue(message || 'Unable to process request. Please try again.')
+    }
+  }
+)
+
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async (payload: { token: string; password: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post<{ message: string }>('/auth/reset-password', payload)
+      return response.data.message
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      return rejectWithValue(message || 'Unable to process request. Please try again.')
+    }
+  }
+)
+
+export const validateInvite = createAsyncThunk(
+  'auth/validateInvite',
+  async (token: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get<{
+        email: string
+        role: 'TENANT' | 'VENDOR'
+        organizationId: string
+        expiresAt: string
+      }>(`/invites/validate/${token}`)
+      return response.data
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      return rejectWithValue(message || 'Invalid or expired invite token.')
+    }
+  }
+)
+
+export const registerFromInvite = createAsyncThunk(
+  'auth/registerFromInvite',
+  async (payload: { token: string; name: string; password: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post<AuthResponse>('/invites/accept', {
+        token: payload.token,
+        name: payload.name,
+        password: payload.password
+      })
+      await setTokens(response.data.accessToken, response.data.refreshToken)
+      return response.data.user
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      return rejectWithValue(message || 'Unable to process request. Please try again.')
+    }
+  }
+)
+
 export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
   try {
-    await api.post('/auth/logout', {})
+    const refreshToken = await getRefreshToken()
+    if (refreshToken) {
+      await api.post('/auth/logout', { refreshToken })
+    }
     await removeTokens()
   } catch {
     await removeTokens()
@@ -89,6 +156,9 @@ const authSlice = createSlice({
   reducers: {
     clearAuthError: (state) => {
       state.error = null
+    },
+    clearAuthInfoMessage: (state) => {
+      state.infoMessage = null
     }
   },
   extraReducers: (builder) => {
@@ -96,6 +166,7 @@ const authSlice = createSlice({
       .addCase(login.pending, (state) => {
         state.loading = true
         state.error = null
+        state.infoMessage = null
       })
       .addCase(login.fulfilled, (state, action: PayloadAction<AuthUser>) => {
         state.loading = false
@@ -108,12 +179,62 @@ const authSlice = createSlice({
       .addCase(register.pending, (state) => {
         state.loading = true
         state.error = null
+        state.infoMessage = null
       })
       .addCase(register.fulfilled, (state, action: PayloadAction<AuthUser>) => {
         state.loading = false
         state.user = action.payload
       })
       .addCase(register.rejected, (state, action) => {
+        state.loading = false
+        state.error = (action.payload as string) || 'Unable to process request. Please try again.'
+      })
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true
+        state.error = null
+        state.infoMessage = null
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.loading = false
+        state.infoMessage = action.payload.message
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false
+        state.error = (action.payload as string) || 'Unable to process request. Please try again.'
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true
+        state.error = null
+        state.infoMessage = null
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.loading = false
+        state.infoMessage = action.payload
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false
+        state.error = (action.payload as string) || 'Unable to process request. Please try again.'
+      })
+      .addCase(validateInvite.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(validateInvite.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(validateInvite.rejected, (state, action) => {
+        state.loading = false
+        state.error = (action.payload as string) || 'Invalid or expired invite token.'
+      })
+      .addCase(registerFromInvite.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(registerFromInvite.fulfilled, (state, action: PayloadAction<AuthUser>) => {
+        state.loading = false
+        state.user = action.payload
+      })
+      .addCase(registerFromInvite.rejected, (state, action) => {
         state.loading = false
         state.error = (action.payload as string) || 'Unable to process request. Please try again.'
       })
@@ -134,5 +255,5 @@ const authSlice = createSlice({
   }
 })
 
-export const { clearAuthError } = authSlice.actions
+export const { clearAuthError, clearAuthInfoMessage } = authSlice.actions
 export default authSlice.reducer

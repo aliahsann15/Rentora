@@ -2,7 +2,8 @@ import { Router } from 'express'
 import {
   acceptInvite,
   createInvite,
-  getInvites
+  getInvites,
+  validateInviteToken
 } from '../controllers/invitesController'
 import { authenticateJWT } from '../middlewares/authenticateJWT'
 import { attachOrganization } from '../middlewares/attachOrganization'
@@ -13,6 +14,7 @@ const router = Router()
 
 router.post('/', authenticateJWT, attachOrganization, requireSubscriptionActive, requireRole('LANDLORD'), createInvite)
 router.get('/', authenticateJWT, attachOrganization, requireSubscriptionActive, requireRole('LANDLORD'), getInvites)
+router.get('/validate/:token', validateInviteToken)
 router.post('/accept', acceptInvite)
 
 export { router as invitesRoutes }

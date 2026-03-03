@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { Provider } from 'react-redux'
 import { StatusBar } from 'expo-status-bar'
 import {
@@ -10,11 +9,11 @@ import {
   useFonts
 } from '@expo-google-fonts/inter'
 import { store } from './src/store'
-import { colors } from './src/utils/theme'
 import { AppNavigator } from './src/navigation/AppNavigator'
 import { bootstrapSession } from './src/slices/authSlice'
 import { useAppDispatch } from './src/hooks/useAppDispatch'
 import { useAppSelector } from './src/hooks/useAppSelector'
+import { SplashScreen } from './src/screens/auth/SplashScreen'
 
 const BootstrapGate = () => {
   const dispatch = useAppDispatch()
@@ -25,11 +24,7 @@ const BootstrapGate = () => {
   }, [dispatch])
 
   if (initializing) {
-    return (
-      <View style={styles.loadingWrap}>
-        <ActivityIndicator color={colors.primary} size='large' />
-      </View>
-    )
+    return <SplashScreen />
   }
 
   return <AppNavigator />
@@ -44,11 +39,7 @@ export default function App() {
   })
 
   if (!fontsLoaded) {
-    return (
-      <View style={styles.loadingWrap}>
-        <ActivityIndicator color={colors.primary} size='large' />
-      </View>
-    )
+    return <SplashScreen />
   }
 
   return (
@@ -58,12 +49,3 @@ export default function App() {
     </Provider>
   )
 }
-
-const styles = StyleSheet.create({
-  loadingWrap: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center'
-  }
-})

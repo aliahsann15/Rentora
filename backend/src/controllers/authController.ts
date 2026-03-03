@@ -168,6 +168,61 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
   }
 }
 
+export const forgotPassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email } = req.body as { email?: string }
+
+    if (!email) {
+      return res.status(400).json({ message: 'email is required' })
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() })
+
+    if (!user || !user.isActive) {
+      return res.status(200).json({ message: 'If this email exists, a reset link has been generated.' })
+    }
+
+    const payload = buildAuthPayload({
+      _id: user._id.toString(),
+      organizationId: user.organizationId?.toString(),
+      role: user.role
+    })
+
+    const resetToken = signAccessToken(payload)
+
+    return res.status(200).json({
+      message: 'Password reset token generated successfully.',
+      resetToken
+    })
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to process forgot password request', error })
+  }
+}
+
+export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { token, password } = req.body as { token?: string; password?: string }
+
+    if (!token || !password) {
+      return res.status(400).json({ message: 'token and password are required' })
+    }
+
+    const decoded = verifyToken(token)
+    const user = await User.findById(decoded.userId).select('+passwordHash')
+
+    if (!user || !user.isActive) {
+      return res.status(400).json({ message: 'Invalid or expired reset token' })
+    }
+
+    user.passwordHash = await bcrypt.hash(password, 12)
+    await user.save()
+
+    return res.status(200).json({ message: 'Password has been reset successfully.' })
+  } catch (error) {
+    return res.status(400).json({ message: 'Invalid or expired reset token', error })
+  }
+}
+
 export const refresh = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { refreshToken } = req.body as { refreshToken?: string }

@@ -127,3 +127,27 @@ export const acceptInvite = async (req: Request, res: Response): Promise<Respons
     return res.status(500).json({ message: 'Failed to accept invite', error })
   }
 }
+
+export const validateInviteToken = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { token } = req.params as { token?: string }
+
+    if (!token) {
+      return res.status(400).json({ message: 'token is required' })
+    }
+
+    const invite = await Invite.findOne({ token, accepted: false })
+    if (!invite || invite.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired invite token' })
+    }
+
+    return res.status(200).json({
+      email: invite.email,
+      role: invite.role,
+      organizationId: invite.organizationId,
+      expiresAt: invite.expiresAt
+    })
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to validate invite token', error })
+  }
+}
