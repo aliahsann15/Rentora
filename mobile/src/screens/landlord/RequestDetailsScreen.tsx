@@ -7,6 +7,7 @@ import { StatusBadge } from '../../components/StatusBadge'
 import { api, RequestItem } from '../../services/api'
 import { LandlordRequestsStackParamList } from '../../navigation/types'
 import { colors, radius, spacing, typography } from '../../utils/theme'
+import { ROUTES } from '../../navigation/routes'
 
 type Props = NativeStackScreenProps<LandlordRequestsStackParamList, 'RequestDetails'>
 
@@ -84,7 +85,7 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
         <Text style={styles.value}>{request.vendorId || 'Not assigned'}</Text>
       </View>
 
-      <AppButton title='Assign Vendor' onPress={() => navigation.navigate('AssignVendor', { requestId: request._id })} />
+      <AppButton title='Assign Vendor' onPress={() => navigation.navigate(ROUTES.ASSIGN_VENDOR, { requestId: request._id })} />
 
       <View style={styles.actionsRow}>
         <Pressable style={styles.actionBtn} onPress={() => updateStatus('IN_PROGRESS')}>

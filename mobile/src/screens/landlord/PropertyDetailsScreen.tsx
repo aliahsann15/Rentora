@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { LandlordPropertiesStackParamList } from '../../navigation/types'
+import { ROUTES } from '../../navigation/routes'
 import { api } from '../../services/api'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
@@ -58,13 +59,13 @@ export const PropertyDetailsScreen = ({ route, navigation }: Props) => {
 
       <Text style={styles.sectionTitle}>Units list</Text>
       {units.map((unit) => (
-        <Pressable key={unit._id} style={styles.unitCard} onPress={() => navigation.navigate('EditUnit', { unitId: unit._id })}>
+        <Pressable key={unit._id} style={styles.unitCard} onPress={() => navigation.navigate(ROUTES.EDIT_UNIT, { unitId: unit._id })}>
           <Text style={styles.unitTitle}>Unit {unit.unitNumber}</Text>
           <Text style={[styles.unitStatus, unit.status === 'OCCUPIED' ? styles.occupied : styles.vacant]}>{unit.status}</Text>
         </Pressable>
       ))}
 
-      <Pressable style={styles.addUnitBtn} onPress={() => navigation.navigate('AddUnit', { propertyId: route.params.propertyId })}>
+      <Pressable style={styles.addUnitBtn} onPress={() => navigation.navigate(ROUTES.ADD_UNIT, { propertyId: route.params.propertyId })}>
         <Text style={styles.addUnitText}>Add Unit</Text>
       </Pressable>
     </ScreenContainer>

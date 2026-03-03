@@ -6,6 +6,7 @@ import { StatusBadge } from '../../components/StatusBadge'
 import { api, RequestItem } from '../../services/api'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 import { LandlordRequestsStackParamList } from '../../navigation/types'
+import { ROUTES } from '../../navigation/routes'
 
 type Props = NativeStackScreenProps<LandlordRequestsStackParamList, 'RequestsList'>
 
@@ -112,7 +113,7 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
       </View>
 
       {filteredRequests.map((request) => (
-        <Pressable key={request._id} style={styles.card} onPress={() => navigation.navigate('RequestDetails', { requestId: request._id })}>
+        <Pressable key={request._id} style={styles.card} onPress={() => navigation.navigate(ROUTES.REQUEST_DETAILS, { requestId: request._id })}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>{request.title}</Text>
             <StatusBadge status={request.status} />

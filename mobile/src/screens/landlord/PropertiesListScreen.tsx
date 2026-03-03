@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { LandlordPropertiesStackParamList } from '../../navigation/types'
+import { ROUTES } from '../../navigation/routes'
 import { api } from '../../services/api'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
@@ -40,7 +41,7 @@ export const PropertiesListScreen = ({ navigation }: Props) => {
         <Pressable
           key={property._id}
           style={styles.card}
-          onPress={() => navigation.navigate('PropertyDetails', { propertyId: property._id })}
+          onPress={() => navigation.navigate(ROUTES.PROPERTY_DETAILS, { propertyId: property._id })}
         >
           <Text style={styles.name}>{property.name}</Text>
           <Text style={styles.meta}>Unit count: {property.totalUnits ?? '—'}</Text>
@@ -51,7 +52,7 @@ export const PropertiesListScreen = ({ navigation }: Props) => {
       ))}
 
       <View style={styles.fabWrap}>
-        <Pressable style={styles.fab} onPress={() => navigation.navigate('AddProperty')}>
+        <Pressable style={styles.fab} onPress={() => navigation.navigate(ROUTES.ADD_PROPERTY)}>
           <Text style={styles.fabText}>＋ Add Property</Text>
         </Pressable>
       </View>

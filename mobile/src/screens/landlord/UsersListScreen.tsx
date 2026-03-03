@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { LandlordUsersStackParamList } from '../../navigation/types'
+import { ROUTES } from '../../navigation/routes'
 import { api } from '../../services/api'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
@@ -47,7 +48,7 @@ export const UsersListScreen = ({ navigation }: Props) => {
           style={styles.card}
           onPress={() => {
             if (user.role === 'VENDOR') {
-              navigation.navigate('VendorDetails', { vendorId: user._id })
+              navigation.navigate(ROUTES.VENDOR_DETAILS, { vendorId: user._id })
             }
           }}
         >
@@ -57,7 +58,7 @@ export const UsersListScreen = ({ navigation }: Props) => {
         </Pressable>
       ))}
 
-      <Pressable style={styles.inviteBtn} onPress={() => navigation.navigate('InviteUser')}>
+      <Pressable style={styles.inviteBtn} onPress={() => navigation.navigate(ROUTES.INVITE_USER)}>
         <Text style={styles.inviteBtnText}>Invite User</Text>
       </Pressable>
     </ScreenContainer>

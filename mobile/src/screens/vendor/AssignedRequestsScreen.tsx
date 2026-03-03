@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
 import { VendorRequestsStackParamList } from '../../navigation/types'
+import { ROUTES } from '../../navigation/routes'
 import { api, RequestItem } from '../../services/api'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
@@ -65,7 +66,7 @@ export const AssignedRequestsScreen = ({ navigation }: Props) => {
         <Pressable
           key={request._id}
           style={styles.card}
-          onPress={() => navigation.navigate('VendorRequestDetails', { requestId: request._id })}
+          onPress={() => navigation.navigate(ROUTES.VENDOR_REQUEST_DETAILS, { requestId: request._id })}
         >
           <View style={styles.rowBetween}>
             <Text style={styles.cardTitle}>{request.title}</Text>

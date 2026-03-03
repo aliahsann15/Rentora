@@ -5,6 +5,7 @@ import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
 import { api, RequestItem } from '../../services/api'
 import { colors, radius, spacing, typography } from '../../utils/theme'
+import { ROUTES } from '../../navigation/routes'
 
 interface UnitItem {
   _id: string
@@ -45,14 +46,14 @@ export const LandlordDashboardScreen = () => {
       <Text style={styles.title}>Dashboard</Text>
 
       <View style={styles.statGrid}>
-        <Pressable style={styles.statCard} onPress={() => navigation.navigate('Requests', { screen: 'RequestsList' })}>
+        <Pressable style={styles.statCard} onPress={() => navigation.navigate(ROUTES.REQUESTS, { screen: ROUTES.REQUESTS_LIST })}>
           <Text style={styles.statValue}>{totals.totalUnits}</Text>
           <Text style={styles.statLabel}>Total Units</Text>
         </Pressable>
 
         <Pressable
           style={styles.statCard}
-          onPress={() => navigation.navigate('Requests', { screen: 'RequestsList', params: { status: 'IN_PROGRESS' } })}
+          onPress={() => navigation.navigate(ROUTES.REQUESTS, { screen: ROUTES.REQUESTS_LIST, params: { status: 'IN_PROGRESS' } })}
         >
           <Text style={styles.statValue}>{totals.activeRequests}</Text>
           <Text style={styles.statLabel}>Active Requests</Text>
@@ -60,7 +61,7 @@ export const LandlordDashboardScreen = () => {
 
         <Pressable
           style={styles.statCard}
-          onPress={() => navigation.navigate('Requests', { screen: 'RequestsList', params: { status: 'NEW' } })}
+          onPress={() => navigation.navigate(ROUTES.REQUESTS, { screen: ROUTES.REQUESTS_LIST, params: { status: 'NEW' } })}
         >
           <Text style={styles.statValue}>{totals.pendingRequests}</Text>
           <Text style={styles.statLabel}>Pending Requests</Text>
@@ -73,7 +74,7 @@ export const LandlordDashboardScreen = () => {
         <Pressable
           key={request._id}
           style={styles.requestCard}
-          onPress={() => navigation.navigate('Requests', { screen: 'RequestDetails', params: { requestId: request._id } })}
+          onPress={() => navigation.navigate(ROUTES.REQUESTS, { screen: ROUTES.REQUEST_DETAILS, params: { requestId: request._id } })}
         >
           <View style={styles.requestHeader}>
             <Text style={styles.requestTitle}>{request.title}</Text>

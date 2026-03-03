@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
 import { TenantRequestsStackParamList } from '../../navigation/types'
+import { ROUTES } from '../../navigation/routes'
 import { api, RequestItem } from '../../services/api'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
@@ -45,7 +46,7 @@ export const MyRequestsScreen = ({ navigation }: Props) => {
         <Pressable
           key={request._id}
           style={styles.card}
-          onPress={() => navigation.navigate('TenantRequestDetails', { requestId: request._id })}
+          onPress={() => navigation.navigate(ROUTES.TENANT_REQUEST_DETAILS, { requestId: request._id })}
         >
           <View style={styles.cardRow}>
             <Text style={styles.cardTitle}>{request.title}</Text>
