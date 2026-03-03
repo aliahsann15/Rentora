@@ -19,15 +19,16 @@ export const getVendors = async (req: Request, res: Response): Promise<Response>
 
 export const createVendor = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { userId, organizationId, services, rating, totalJobs, notes, isActive } = req.body as {
+    const { userId, services, rating, totalJobs, notes, isActive } = req.body as {
       userId?: string
-      organizationId?: string
       services?: string[]
       rating?: number
       totalJobs?: number
       notes?: string
       isActive?: boolean
     }
+
+    const organizationId = req.user?.organizationId
 
     if (!userId || !organizationId) {
       return res.status(400).json({ message: 'userId and organizationId are required' })
@@ -60,7 +61,11 @@ export const updateVendor = async (req: Request, res: Response): Promise<Respons
       }
     }
 
-    const vendor = await Vendor.findByIdAndUpdate(req.params.id, updates, { new: true })
+    const vendor = await Vendor.findOneAndUpdate(
+      { _id: req.params.id, organizationId: req.user?.organizationId },
+      updates,
+      { new: true }
+    )
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' })
     }
@@ -73,7 +78,10 @@ export const updateVendor = async (req: Request, res: Response): Promise<Respons
 
 export const deleteVendor = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const vendor = await Vendor.findByIdAndDelete(req.params.id)
+    const vendor = await Vendor.findOneAndDelete({
+      _id: req.params.id,
+      organizationId: req.user?.organizationId
+    })
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' })
     }

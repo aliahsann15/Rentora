@@ -19,8 +19,7 @@ export const getProperties = async (req: Request, res: Response): Promise<Respon
 
 export const createProperty = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { organizationId, name, address, totalUnits } = req.body as {
-      organizationId?: string
+    const { name, address, totalUnits } = req.body as {
       name?: string
       address?: {
         line1: string
@@ -31,6 +30,8 @@ export const createProperty = async (req: Request, res: Response): Promise<Respo
       }
       totalUnits?: number
     }
+
+    const organizationId = req.user?.organizationId
 
     if (!organizationId || !name || !address) {
       return res.status(400).json({ message: 'organizationId, name, and address are required' })
@@ -51,7 +52,10 @@ export const createProperty = async (req: Request, res: Response): Promise<Respo
 
 export const getPropertyById = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const property = await Property.findById(req.params.id)
+    const property = await Property.findOne({
+      _id: req.params.id,
+      organizationId: req.user?.organizationId
+    })
     if (!property) {
       return res.status(404).json({ message: 'Property not found' })
     }
@@ -73,7 +77,11 @@ export const updateProperty = async (req: Request, res: Response): Promise<Respo
       }
     }
 
-    const property = await Property.findByIdAndUpdate(req.params.id, updates, { new: true })
+    const property = await Property.findOneAndUpdate(
+      { _id: req.params.id, organizationId: req.user?.organizationId },
+      updates,
+      { new: true }
+    )
     if (!property) {
       return res.status(404).json({ message: 'Property not found' })
     }
@@ -86,7 +94,10 @@ export const updateProperty = async (req: Request, res: Response): Promise<Respo
 
 export const deleteProperty = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const property = await Property.findByIdAndDelete(req.params.id)
+    const property = await Property.findOneAndDelete({
+      _id: req.params.id,
+      organizationId: req.user?.organizationId
+    })
     if (!property) {
       return res.status(404).json({ message: 'Property not found' })
     }

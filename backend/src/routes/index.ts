@@ -10,19 +10,23 @@ import { unitsRoutes } from './unitsRoutes'
 import { usersRoutes } from './usersRoutes'
 import { vendorsRoutes } from './vendorsRoutes'
 import { webhooksRoutes } from './webhooksRoutes'
+import { authenticateJWT } from '../middlewares/authenticateJWT'
+import { attachOrganization } from '../middlewares/attachOrganization'
+import { requireRole } from '../middlewares/requireRole'
+import { requireSubscriptionActive } from '../middlewares/requireSubscriptionActive'
 
 const apiRouter = Router()
 
 apiRouter.use('/auth', authRoutes)
-apiRouter.use('/users', usersRoutes)
-apiRouter.use('/organizations', organizationsRoutes)
-apiRouter.use('/properties', propertiesRoutes)
-apiRouter.use('/units', unitsRoutes)
-apiRouter.use('/requests', requestsRoutes)
-apiRouter.use('/vendors', vendorsRoutes)
+apiRouter.use('/users', authenticateJWT, attachOrganization, requireSubscriptionActive, requireRole('LANDLORD'), usersRoutes)
+apiRouter.use('/organizations', authenticateJWT, attachOrganization, organizationsRoutes)
+apiRouter.use('/properties', authenticateJWT, attachOrganization, requireSubscriptionActive, requireRole('LANDLORD'), propertiesRoutes)
+apiRouter.use('/units', authenticateJWT, attachOrganization, requireSubscriptionActive, requireRole('LANDLORD'), unitsRoutes)
+apiRouter.use('/requests', authenticateJWT, attachOrganization, requireSubscriptionActive, requestsRoutes)
+apiRouter.use('/vendors', authenticateJWT, attachOrganization, requireSubscriptionActive, requireRole('LANDLORD'), vendorsRoutes)
 apiRouter.use('/invites', invitesRoutes)
-apiRouter.use('/notifications', notificationsRoutes)
-apiRouter.use('/subscriptions', subscriptionsRoutes)
+apiRouter.use('/notifications', authenticateJWT, attachOrganization, requireSubscriptionActive, notificationsRoutes)
+apiRouter.use('/subscriptions', authenticateJWT, attachOrganization, subscriptionsRoutes)
 apiRouter.use('/webhooks', webhooksRoutes)
 
 export { apiRouter }

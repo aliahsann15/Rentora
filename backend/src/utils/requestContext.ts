@@ -2,6 +2,10 @@ import { Request } from 'express'
 import { AuthTokenPayload, verifyToken } from './auth'
 
 export const getOrganizationIdFromRequest = (req: Request): string | undefined => {
+  if (req.user?.organizationId) {
+    return req.user.organizationId
+  }
+
   const fromHeader = req.header('x-organization-id')
   const fromQuery = typeof req.query.organizationId === 'string' ? req.query.organizationId : undefined
   const fromBody = typeof req.body?.organizationId === 'string' ? req.body.organizationId : undefined

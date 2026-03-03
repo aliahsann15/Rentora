@@ -7,12 +7,12 @@ const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null
 
 export const createCheckoutSession = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { organizationId, priceId, successUrl, cancelUrl } = req.body as {
-      organizationId?: string
+    const { priceId, successUrl, cancelUrl } = req.body as {
       priceId?: string
       successUrl?: string
       cancelUrl?: string
     }
+    const organizationId = req.user?.organizationId
 
     if (!organizationId || !priceId || !successUrl || !cancelUrl) {
       return res.status(400).json({
@@ -48,7 +48,7 @@ export const createCheckoutSession = async (req: Request, res: Response): Promis
 
 export const getSubscriptionStatus = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const organizationId = typeof req.query.organizationId === 'string' ? req.query.organizationId : undefined
+    const organizationId = req.user?.organizationId
     if (!organizationId) {
       return res.status(400).json({ message: 'organizationId is required' })
     }

@@ -3,16 +3,13 @@ import { Notification } from '../models'
 
 export const getNotifications = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const userId = typeof req.query.userId === 'string' ? req.query.userId : undefined
-    const organizationId = typeof req.query.organizationId === 'string' ? req.query.organizationId : undefined
+    const userId = req.user?.userId
+    const organizationId = req.user?.organizationId
     const isRead = typeof req.query.isRead === 'string' ? req.query.isRead === 'true' : undefined
 
-    const filter: Record<string, unknown> = {}
-    if (userId) {
-      filter.userId = userId
-    }
-    if (organizationId) {
-      filter.organizationId = organizationId
+    const filter: Record<string, unknown> = {
+      userId,
+      organizationId
     }
     if (isRead !== undefined) {
       filter.isRead = isRead
@@ -27,8 +24,12 @@ export const getNotifications = async (req: Request, res: Response): Promise<Res
 
 export const markNotificationAsRead = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const notification = await Notification.findByIdAndUpdate(
-      req.params.id,
+    const notification = await Notification.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        userId: req.user?.userId,
+        organizationId: req.user?.organizationId
+      },
       { isRead: true },
       { new: true }
     )

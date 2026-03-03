@@ -24,7 +24,10 @@ export const getUsers = async (req: Request, res: Response): Promise<Response> =
 
 export const getUserById = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const user = await User.findById(req.params.id).select('-passwordHash')
+    const user = await User.findOne({
+      _id: req.params.id,
+      organizationId: req.user?.organizationId
+    }).select('-passwordHash')
     if (!user) {
       return res.status(404).json({ message: 'User not found' })
     }
@@ -45,7 +48,11 @@ export const updateUser = async (req: Request, res: Response): Promise<Response>
       }
     }
 
-    const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-passwordHash')
+    const user = await User.findOneAndUpdate(
+      { _id: req.params.id, organizationId: req.user?.organizationId },
+      updates,
+      { new: true }
+    ).select('-passwordHash')
     if (!user) {
       return res.status(404).json({ message: 'User not found' })
     }
@@ -58,7 +65,10 @@ export const updateUser = async (req: Request, res: Response): Promise<Response>
 
 export const deleteUser = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id)
+    const user = await User.findOneAndDelete({
+      _id: req.params.id,
+      organizationId: req.user?.organizationId
+    })
     if (!user) {
       return res.status(404).json({ message: 'User not found' })
     }

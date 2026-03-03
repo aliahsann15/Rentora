@@ -29,7 +29,6 @@ export const getUnits = async (req: Request, res: Response): Promise<Response> =
 export const createUnit = async (req: Request, res: Response): Promise<Response> => {
   try {
     const {
-      organizationId,
       propertyId,
       unitNumber,
       tenantId,
@@ -38,7 +37,6 @@ export const createUnit = async (req: Request, res: Response): Promise<Response>
       leaseEnd,
       status
     } = req.body as {
-      organizationId?: string
       propertyId?: string
       unitNumber?: string
       tenantId?: string
@@ -47,6 +45,8 @@ export const createUnit = async (req: Request, res: Response): Promise<Response>
       leaseEnd?: string
       status?: 'OCCUPIED' | 'VACANT'
     }
+
+    const organizationId = req.user?.organizationId
 
     if (!organizationId || !propertyId || !unitNumber) {
       return res.status(400).json({ message: 'organizationId, propertyId, and unitNumber are required' })
@@ -80,7 +80,11 @@ export const updateUnit = async (req: Request, res: Response): Promise<Response>
       }
     }
 
-    const unit = await Unit.findByIdAndUpdate(req.params.id, updates, { new: true })
+    const unit = await Unit.findOneAndUpdate(
+      { _id: req.params.id, organizationId: req.user?.organizationId },
+      updates,
+      { new: true }
+    )
     if (!unit) {
       return res.status(404).json({ message: 'Unit not found' })
     }
@@ -93,7 +97,10 @@ export const updateUnit = async (req: Request, res: Response): Promise<Response>
 
 export const deleteUnit = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const unit = await Unit.findByIdAndDelete(req.params.id)
+    const unit = await Unit.findOneAndDelete({
+      _id: req.params.id,
+      organizationId: req.user?.organizationId
+    })
     if (!unit) {
       return res.status(404).json({ message: 'Unit not found' })
     }

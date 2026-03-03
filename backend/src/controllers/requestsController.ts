@@ -1,23 +1,44 @@
 import { Request, Response } from 'express'
 import { MaintenanceRequest } from '../models'
-import { getOrganizationIdFromRequest } from '../utils/requestContext'
+import {
+  assignVendorWithRules,
+  createRequestWithRules,
+  getScopedRequestFilter,
+  updateStatusWithRules
+} from '../services/requestStatusService'
+
+const readCurrentUser = (req: Request) => {
+  if (!req.user) {
+    throw new Error('Unauthorized')
+  }
+
+  return req.user
+}
+
+const readRequestId = (req: Request): string => {
+  const value = req.params.id as unknown
+  if (typeof value !== 'string') {
+    throw new Error('Invalid request id')
+  }
+
+  return value
+}
 
 export const getRequests = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const organizationId = getOrganizationIdFromRequest(req)
+    const currentUser = readCurrentUser(req)
+    const baseFilter = await getScopedRequestFilter(currentUser)
+
     const status = typeof req.query.status === 'string' ? req.query.status : undefined
-    const vendorId = typeof req.query.vendorId === 'string' ? req.query.vendorId : undefined
+    const vendorIdQuery = typeof req.query.vendorId === 'string' ? req.query.vendorId : undefined
     const propertyId = typeof req.query.propertyId === 'string' ? req.query.propertyId : undefined
 
-    const filter: Record<string, unknown> = {}
-    if (organizationId) {
-      filter.organizationId = organizationId
-    }
+    const filter: Record<string, unknown> = { ...baseFilter }
     if (status) {
       filter.status = status
     }
-    if (vendorId) {
-      filter.vendorId = vendorId
+    if (vendorIdQuery && currentUser.role === 'LANDLORD') {
+      filter.vendorId = vendorIdQuery
     }
     if (propertyId) {
       filter.propertyId = propertyId
@@ -32,57 +53,55 @@ export const getRequests = async (req: Request, res: Response): Promise<Response
 
 export const createRequest = async (req: Request, res: Response): Promise<Response> => {
   try {
+    const currentUser = readCurrentUser(req)
+
     const {
-      organizationId,
       propertyId,
       unitId,
       tenantId,
-      vendorId,
       title,
       description,
       images,
       urgency
     } = req.body as {
-      organizationId?: string
       propertyId?: string
       unitId?: string
       tenantId?: string
-      vendorId?: string
       title?: string
       description?: string
       images?: string[]
       urgency?: 'LOW' | 'MEDIUM' | 'HIGH'
     }
 
-    if (!organizationId || !propertyId || !unitId || !tenantId || !title || !description) {
+    if (!propertyId || !unitId || !tenantId || !title || !description) {
       return res.status(400).json({
-        message: 'organizationId, propertyId, unitId, tenantId, title, and description are required'
+        message: 'propertyId, unitId, tenantId, title, and description are required'
       })
     }
 
-    const request = await MaintenanceRequest.create({
-      organizationId,
+    const request = await createRequestWithRules({
+      organizationId: currentUser.organizationId,
       propertyId,
       unitId,
       tenantId,
-      vendorId,
       title,
       description,
       images: images || [],
-      urgency: urgency || 'MEDIUM',
-      status: vendorId ? 'ASSIGNED' : 'NEW',
-      assignedAt: vendorId ? new Date() : undefined
-    })
+      urgency: urgency || 'MEDIUM'
+    }, currentUser)
 
     return res.status(201).json(request)
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to create request', error })
+    return res.status(400).json({ message: 'Failed to create request', error })
   }
 }
 
 export const getRequestById = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const request = await MaintenanceRequest.findById(req.params.id)
+    const currentUser = readCurrentUser(req)
+    const filter = await getScopedRequestFilter(currentUser)
+    const requestId = readRequestId(req)
+    const request = await MaintenanceRequest.findOne({ _id: requestId, ...filter })
     if (!request) {
       return res.status(404).json({ message: 'Request not found' })
     }
@@ -94,64 +113,46 @@ export const getRequestById = async (req: Request, res: Response): Promise<Respo
 
 export const updateRequestStatus = async (req: Request, res: Response): Promise<Response> => {
   try {
+    const currentUser = readCurrentUser(req)
     const { status } = req.body as { status?: 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'DONE' | 'VERIFIED' }
     if (!status) {
       return res.status(400).json({ message: 'status is required' })
     }
 
-    const updates: Record<string, unknown> = { status }
-    if (status === 'DONE' || status === 'VERIFIED') {
-      updates.completedAt = new Date()
-    }
-
-    const request = await MaintenanceRequest.findByIdAndUpdate(req.params.id, updates, { new: true })
-    if (!request) {
-      return res.status(404).json({ message: 'Request not found' })
-    }
+    const requestId = readRequestId(req)
+    const request = await updateStatusWithRules(requestId, status, currentUser)
 
     return res.status(200).json(request)
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to update request status', error })
+    return res.status(400).json({ message: 'Failed to update request status', error })
   }
 }
 
 export const assignRequestVendor = async (req: Request, res: Response): Promise<Response> => {
   try {
+    const currentUser = readCurrentUser(req)
     const { vendorId } = req.body as { vendorId?: string }
     if (!vendorId) {
       return res.status(400).json({ message: 'vendorId is required' })
     }
 
-    const request = await MaintenanceRequest.findByIdAndUpdate(
-      req.params.id,
-      { vendorId, status: 'ASSIGNED', assignedAt: new Date() },
-      { new: true }
-    )
-
-    if (!request) {
-      return res.status(404).json({ message: 'Request not found' })
-    }
+    const requestId = readRequestId(req)
+    const request = await assignVendorWithRules(requestId, vendorId, currentUser)
 
     return res.status(200).json(request)
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to assign vendor', error })
+    return res.status(400).json({ message: 'Failed to assign vendor', error })
   }
 }
 
 export const verifyRequest = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const request = await MaintenanceRequest.findByIdAndUpdate(
-      req.params.id,
-      { status: 'VERIFIED', completedAt: new Date() },
-      { new: true }
-    )
-
-    if (!request) {
-      return res.status(404).json({ message: 'Request not found' })
-    }
+    const currentUser = readCurrentUser(req)
+    const requestId = readRequestId(req)
+    const request = await updateStatusWithRules(requestId, 'VERIFIED', currentUser)
 
     return res.status(200).json(request)
   } catch (error) {
-    return res.status(500).json({ message: 'Failed to verify request', error })
+    return res.status(400).json({ message: 'Failed to verify request', error })
   }
 }

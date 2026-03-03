@@ -6,13 +6,13 @@ import { getTokenExpiryDate, signAccessToken, signRefreshToken } from '../utils/
 
 export const createInvite = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { email, role, organizationId, unitId, expiresInDays } = req.body as {
+    const { email, role, unitId, expiresInDays } = req.body as {
       email?: string
       role?: 'LANDLORD' | 'TENANT' | 'VENDOR'
-      organizationId?: string
       unitId?: string
       expiresInDays?: number
     }
+    const organizationId = req.user?.organizationId
 
     if (!email || !role || !organizationId) {
       return res.status(400).json({ message: 'email, role, and organizationId are required' })
@@ -36,7 +36,7 @@ export const createInvite = async (req: Request, res: Response): Promise<Respons
 
 export const getInvites = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const organizationId = typeof req.query.organizationId === 'string' ? req.query.organizationId : undefined
+    const organizationId = req.user?.organizationId
     const email = typeof req.query.email === 'string' ? req.query.email.toLowerCase() : undefined
     const accepted = typeof req.query.accepted === 'string' ? req.query.accepted === 'true' : undefined
 
