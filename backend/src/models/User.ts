@@ -10,6 +10,7 @@ export interface IUser extends Document {
   organizationId?: mongoose.Types.ObjectId
   phone?: string
   avatar?: string
+  pushTokens: string[]
   isActive: boolean
   lastLoginAt?: Date
   createdAt: Date
@@ -30,6 +31,7 @@ const userSchema = new Schema<IUser>(
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
     phone: { type: String },
     avatar: { type: String },
+    pushTokens: { type: [String], default: [] },
     isActive: { type: Boolean, default: true },
     lastLoginAt: { type: Date }
   },
