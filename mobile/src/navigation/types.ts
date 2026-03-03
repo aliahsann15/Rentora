@@ -126,13 +126,8 @@ export type TenantRequestsStackScreenProps<T extends keyof TenantRequestsStackPa
 // ============================================================================
 
 export type VendorTabParamList = {
-  DashboardTab: undefined
-  AssignedRequestsTab: undefined
-  CompletedTab: undefined
-  RatingsTab: undefined
-  ProfileTab: undefined
-  // Modals (presented over tab stack)
-  RequestDetailsModal: NavigatorScreenParams<VendorRequestDetailsStackParamList>
+  AssignedRequests: NavigatorScreenParams<VendorRequestsStackParamList>
+  Profile: undefined
 }
 
 export type VendorTabScreenProps<T extends keyof VendorTabParamList> = CompositeScreenProps<
@@ -140,13 +135,13 @@ export type VendorTabScreenProps<T extends keyof VendorTabParamList> = Composite
   RootStackScreenProps<'App'>
 >
 
-export type VendorRequestDetailsStackParamList = {
-  RequestDetail: { requestId: string }
-  UpdateStatus: { requestId: string }
+export type VendorRequestsStackParamList = {
+  AssignedRequestsList: undefined
+  VendorRequestDetails: { requestId: string }
 }
 
-export type VendorRequestDetailsStackScreenProps<T extends keyof VendorRequestDetailsStackParamList> =
-  NativeStackScreenProps<VendorRequestDetailsStackParamList, T>
+export type VendorRequestsStackScreenProps<T extends keyof VendorRequestsStackParamList> =
+  NativeStackScreenProps<VendorRequestsStackParamList, T>
 
 // ============================================================================
 // UTILITY TYPES FOR NAVIGATION

@@ -4,6 +4,7 @@ import {
   createRequest,
   getRequestById,
   getRequests,
+  uploadRequestImages,
   updateRequestStatus,
   verifyRequest
 } from '../controllers/requestsController'
@@ -14,6 +15,7 @@ router.get('/', getRequests)
 router.post('/', createRequest)
 router.get('/:id', getRequestById)
 router.patch('/:id/status', updateRequestStatus)
+router.patch('/:id/images', uploadRequestImages)
 router.patch('/:id/assign', assignRequestVendor)
 router.patch('/:id/verify', verifyRequest)
 

@@ -163,3 +163,33 @@ export const updateStatusWithRules = async (
   await request.save()
   return request
 }
+
+export const addRequestImagesWithRules = async (
+  requestId: string,
+  images: string[],
+  currentUser: CurrentUser
+) => {
+  const request = await MaintenanceRequest.findOne({
+    _id: requestId,
+    organizationId: currentUser.organizationId
+  })
+
+  if (!request) {
+    throw new Error('Request not found')
+  }
+
+  if (currentUser.role === 'TENANT') {
+    throw new Error('Tenant cannot upload request images')
+  }
+
+  if (currentUser.role === 'VENDOR') {
+    const vendorId = await ensureVendorAssigned(currentUser)
+    if (!request.vendorId || request.vendorId.toString() !== vendorId) {
+      throw new Error('Vendor can only upload images for assigned requests')
+    }
+  }
+
+  request.images = [...request.images, ...images]
+  await request.save()
+  return request
+}

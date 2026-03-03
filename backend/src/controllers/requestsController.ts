@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { MaintenanceRequest } from '../models'
 import {
+  addRequestImagesWithRules,
   assignVendorWithRules,
   createRequestWithRules,
   getScopedRequestFilter,
@@ -154,5 +155,23 @@ export const verifyRequest = async (req: Request, res: Response): Promise<Respon
     return res.status(200).json(request)
   } catch (error) {
     return res.status(400).json({ message: 'Failed to verify request', error })
+  }
+}
+
+export const uploadRequestImages = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const currentUser = readCurrentUser(req)
+    const { images } = req.body as { images?: string[] }
+
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ message: 'images is required' })
+    }
+
+    const requestId = readRequestId(req)
+    const request = await addRequestImagesWithRules(requestId, images, currentUser)
+
+    return res.status(200).json(request)
+  } catch (error) {
+    return res.status(400).json({ message: 'Failed to upload request images', error })
   }
 }

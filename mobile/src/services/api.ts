@@ -45,6 +45,7 @@ export interface RequestItem {
   _id: string
   title: string
   description: string
+  images: string[]
   status: 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'DONE' | 'VERIFIED'
   urgency: 'LOW' | 'MEDIUM' | 'HIGH'
   tenantId?: string
