@@ -99,17 +99,13 @@ export type LandlordUsersStackScreenProps<T extends keyof LandlordUsersStackPara
   NativeStackScreenProps<LandlordUsersStackParamList, T>
 
 // ============================================================================
-// TENANT TABS & DETAIL MODALS
+// TENANT TABS & STACK
 // ============================================================================
 
 export type TenantTabParamList = {
-  DashboardTab: undefined
-  CreateRequestTab: undefined
-  RequestsTab: undefined
-  NotificationsTab: undefined
-  ProfileTab: undefined
-  // Modals (presented over tab stack)
-  RequestDetailsModal: NavigatorScreenParams<TenantRequestDetailsStackParamList>
+  MyRequests: NavigatorScreenParams<TenantRequestsStackParamList>
+  NewRequest: undefined
+  Profile: undefined
 }
 
 export type TenantTabScreenProps<T extends keyof TenantTabParamList> = CompositeScreenProps<
@@ -117,12 +113,13 @@ export type TenantTabScreenProps<T extends keyof TenantTabParamList> = Composite
   RootStackScreenProps<'App'>
 >
 
-export type TenantRequestDetailsStackParamList = {
-  RequestDetail: { requestId: string }
+export type TenantRequestsStackParamList = {
+  MyRequestsList: undefined
+  TenantRequestDetails: { requestId: string }
 }
 
-export type TenantRequestDetailsStackScreenProps<T extends keyof TenantRequestDetailsStackParamList> =
-  NativeStackScreenProps<TenantRequestDetailsStackParamList, T>
+export type TenantRequestsStackScreenProps<T extends keyof TenantRequestsStackParamList> =
+  NativeStackScreenProps<TenantRequestsStackParamList, T>
 
 // ============================================================================
 // VENDOR TABS & DETAIL MODALS
