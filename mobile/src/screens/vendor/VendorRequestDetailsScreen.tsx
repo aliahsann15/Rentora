@@ -47,17 +47,27 @@ export const VendorRequestDetailsScreen = ({ route }: Props) => {
 
     if (requestData.propertyId) {
       jobs.push(
-        api.get<PropertyDetails>(`/properties/${requestData.propertyId}`).then((res) => {
-          setProperty(res.data)
-        })
+        api
+          .get<PropertyDetails>(`/properties/${requestData.propertyId}`)
+          .then((res) => {
+            setProperty(res.data)
+          })
+          .catch(() => {
+            setProperty(null)
+          })
       )
     }
 
     if (requestData.tenantId) {
       jobs.push(
-        api.get<TenantDetails>(`/users/${requestData.tenantId}`).then((res) => {
-          setTenant(res.data)
-        })
+        api
+          .get<TenantDetails>(`/users/${requestData.tenantId}`)
+          .then((res) => {
+            setTenant(res.data)
+          })
+          .catch(() => {
+            setTenant(null)
+          })
       )
     }
 
@@ -128,17 +138,17 @@ export const VendorRequestDetailsScreen = ({ route }: Props) => {
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Property info</Text>
-        <Text style={styles.value}>{property?.name || '—'}</Text>
+        <Text style={styles.value}>{property?.name || request.propertyId || '—'}</Text>
         <Text style={styles.value}>
           {property?.address
             ? `${property.address.line1 || ''}, ${property.address.city || ''}, ${property.address.state || ''}`
-            : '—'}
+            : request.propertyId || '—'}
         </Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Tenant info</Text>
-        <Text style={styles.value}>{tenant?.name || '—'}</Text>
+        <Text style={styles.value}>{tenant?.name || request.tenantId || '—'}</Text>
         <Text style={styles.value}>{tenant?.email || '—'}</Text>
       </View>
 

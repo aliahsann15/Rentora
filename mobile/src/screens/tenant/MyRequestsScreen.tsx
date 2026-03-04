@@ -21,13 +21,15 @@ export const MyRequestsScreen = ({ navigation }: Props) => {
 
   useEffect(() => {
     const load = async () => {
-      const [reqRes, propRes] = await Promise.all([
-        api.get<RequestItem[]>('/requests'),
-        api.get<PropertyItem[]>('/properties')
-      ])
-
+      const reqRes = await api.get<RequestItem[]>('/requests')
       setRequests(reqRes.data)
-      setProperties(propRes.data)
+
+      try {
+        const propRes = await api.get<PropertyItem[]>('/properties')
+        setProperties(propRes.data)
+      } catch {
+        setProperties([])
+      }
     }
 
     load()

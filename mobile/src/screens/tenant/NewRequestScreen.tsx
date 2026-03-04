@@ -35,16 +35,22 @@ export const NewRequestScreen = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [propertyRes, unitRes] = await Promise.all([
-        api.get<PropertyItem[]>('/properties'),
-        api.get<UnitItem[]>('/units')
-      ])
+      try {
+        const propertyRes = await api.get<PropertyItem[]>('/properties')
+        setProperties(propertyRes.data)
 
-      setProperties(propertyRes.data)
-      setUnits(unitRes.data)
+        if (propertyRes.data.length === 1) {
+          setPropertyId(propertyRes.data[0]._id)
+        }
+      } catch {
+        setProperties([])
+      }
 
-      if (propertyRes.data.length === 1) {
-        setPropertyId(propertyRes.data[0]._id)
+      try {
+        const unitRes = await api.get<UnitItem[]>('/units')
+        setUnits(unitRes.data)
+      } catch {
+        setUnits([])
       }
     }
 
