@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ScreenContainer } from '../../components/ScreenContainer'
@@ -27,14 +28,16 @@ export const PropertiesListScreen = ({ navigation }: Props) => {
   const [deletingPropertyId, setDeletingPropertyId] = useState<string | null>(null)
   const { showAlert } = useAppAlert()
 
-  useEffect(() => {
-    const load = async () => {
-      const response = await api.get<PropertyItem[]>('/properties')
+  const loadProperties = useCallback(async () => {
+    const response = await api.get<PropertyItem[]>('/properties')
     setProperties(response.data)
-  }
-
-    load()
   }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadProperties()
+    }, [loadProperties])
+  )
 
   const deleteProperty = async (propertyId: string) => {
     setDeletingPropertyId(propertyId)
@@ -69,7 +72,7 @@ export const PropertiesListScreen = ({ navigation }: Props) => {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={loadProperties}>
       <Text style={styles.title}>Properties</Text>
 
       {properties.map((property) => (
