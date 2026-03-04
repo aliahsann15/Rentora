@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Ionicons } from '@expo/vector-icons'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ScreenContainer } from '../../components/ScreenContainer'
@@ -25,6 +26,8 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
   const [urgency, setUrgency] = useState<string>(route.params?.urgency || 'ALL')
   const [propertyId, setPropertyId] = useState<string>(route.params?.propertyId || 'ALL')
   const [propertySearch, setPropertySearch] = useState('')
+  const [isStatusOpen, setIsStatusOpen] = useState(false)
+  const [isUrgencyOpen, setIsUrgencyOpen] = useState(false)
 
   const loadRequestsAndProperties = async () => {
     const [requestRes, propertiesRes] = await Promise.all([
@@ -65,25 +68,65 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
     <ScreenContainer onRefresh={loadRequestsAndProperties}>
       <Text style={styles.title}>Requests</Text>
 
-      <View style={styles.filterBlock}>
-        <Text style={styles.filterLabel}>Status</Text>
-        <View style={styles.filterRow}>
-          {statuses.map((value) => (
-            <Pressable key={value} style={[styles.chip, status === value && styles.chipActive]} onPress={() => setStatus(value)}>
-              <Text style={[styles.chipText, status === value && styles.chipTextActive]}>{value}</Text>
-            </Pressable>
-          ))}
+      <View style={styles.dropdownRow}>
+        <View style={[styles.dropdownFieldWrap, isStatusOpen && styles.dropdownFieldWrapActive]}>
+          <Text style={styles.filterLabel}>Status</Text>
+          <Pressable
+            style={styles.dropdownField}
+            onPress={() => {
+              setIsStatusOpen((current) => !current)
+              setIsUrgencyOpen(false)
+            }}
+          >
+            <Text style={styles.dropdownValue}>{status}</Text>
+            <Ionicons name={isStatusOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
+          </Pressable>
+          {isStatusOpen ? (
+            <View style={styles.dropdownList}>
+              {statuses.map((value) => (
+                <Pressable
+                  key={value}
+                  style={[styles.dropdownItem, status === value && styles.dropdownItemActive]}
+                  onPress={() => {
+                    setStatus(value)
+                    setIsStatusOpen(false)
+                  }}
+                >
+                  <Text style={[styles.dropdownItemText, status === value && styles.dropdownItemTextActive]}>{value}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
         </View>
-      </View>
 
-      <View style={styles.filterBlock}>
-        <Text style={styles.filterLabel}>Urgency</Text>
-        <View style={styles.filterRow}>
-          {urgencies.map((value) => (
-            <Pressable key={value} style={[styles.chip, urgency === value && styles.chipActive]} onPress={() => setUrgency(value)}>
-              <Text style={[styles.chipText, urgency === value && styles.chipTextActive]}>{value}</Text>
-            </Pressable>
-          ))}
+        <View style={[styles.dropdownFieldWrap, isUrgencyOpen && styles.dropdownFieldWrapActive]}>
+          <Text style={styles.filterLabel}>Urgency</Text>
+          <Pressable
+            style={styles.dropdownField}
+            onPress={() => {
+              setIsUrgencyOpen((current) => !current)
+              setIsStatusOpen(false)
+            }}
+          >
+            <Text style={styles.dropdownValue}>{urgency}</Text>
+            <Ionicons name={isUrgencyOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
+          </Pressable>
+          {isUrgencyOpen ? (
+            <View style={styles.dropdownList}>
+              {urgencies.map((value) => (
+                <Pressable
+                  key={value}
+                  style={[styles.dropdownItem, urgency === value && styles.dropdownItemActive]}
+                  onPress={() => {
+                    setUrgency(value)
+                    setIsUrgencyOpen(false)
+                  }}
+                >
+                  <Text style={[styles.dropdownItemText, urgency === value && styles.dropdownItemTextActive]}>{value}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -136,6 +179,64 @@ const styles = StyleSheet.create({
   },
   filterBlock: {
     gap: spacing.sm
+  },
+  dropdownRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'flex-start'
+  },
+  dropdownFieldWrap: {
+    flex: 1,
+    gap: spacing.sm,
+    position: 'relative'
+  },
+  dropdownFieldWrapActive: {
+    zIndex: 40,
+    elevation: 40
+  },
+  dropdownField: {
+    height: 44,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  dropdownValue: {
+    fontSize: typography.bodyM,
+    color: colors.textPrimary,
+    fontFamily: 'Inter_500Medium'
+  },
+  dropdownList: {
+    position: 'absolute',
+    top: 74,
+    left: 0,
+    right: 0,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+    zIndex: 50,
+    elevation: 12
+  },
+  dropdownItem: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  dropdownItemActive: {
+    backgroundColor: colors.primarySoft
+  },
+  dropdownItemText: {
+    fontSize: typography.caption,
+    color: colors.textSecondary,
+    fontFamily: 'Inter_500Medium'
+  },
+  dropdownItemTextActive: {
+    color: colors.primary
   },
   filterLabel: {
     fontSize: typography.bodyM,
