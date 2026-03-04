@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ScreenContainer } from '../../components/ScreenContainer'
+import { useAppAlert } from '../../hooks/useAppAlert'
 import { LandlordPropertiesStackParamList } from '../../navigation/types'
 import { ROUTES } from '../../navigation/routes'
 import { api } from '../../services/api'
@@ -23,15 +24,49 @@ interface PropertyItem {
 
 export const PropertiesListScreen = ({ navigation }: Props) => {
   const [properties, setProperties] = useState<PropertyItem[]>([])
+  const [deletingPropertyId, setDeletingPropertyId] = useState<string | null>(null)
+  const { showAlert } = useAppAlert()
 
   useEffect(() => {
     const load = async () => {
       const response = await api.get<PropertyItem[]>('/properties')
-      setProperties(response.data)
-    }
+    setProperties(response.data)
+  }
 
     load()
   }, [])
+
+  const deleteProperty = async (propertyId: string) => {
+    setDeletingPropertyId(propertyId)
+    try {
+      await api.delete(`/properties/${propertyId}`)
+      setProperties((previous) => previous.filter((item) => item._id !== propertyId))
+    } catch {
+      showAlert({
+        title: 'Delete failed',
+        message: 'Unable to delete this property right now.'
+      })
+    } finally {
+      setDeletingPropertyId(null)
+    }
+  }
+
+  const confirmDelete = (property: PropertyItem) => {
+    showAlert({
+      title: 'Delete property?',
+      message: `This will permanently delete ${property.name}, related units, requests, tenant links, and other related records.`,
+      actions: [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void deleteProperty(property._id)
+          }
+        }
+      ]
+    })
+  }
 
   return (
     <ScreenContainer>
@@ -43,7 +78,19 @@ export const PropertiesListScreen = ({ navigation }: Props) => {
           style={styles.card}
           onPress={() => navigation.navigate(ROUTES.PROPERTY_DETAILS, { propertyId: property._id })}
         >
-          <Text style={styles.name}>{property.name}</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.name}>{property.name}</Text>
+            <Pressable
+              style={styles.deleteButton}
+              onPress={(event) => {
+                event.stopPropagation()
+                confirmDelete(property)
+              }}
+              disabled={deletingPropertyId === property._id}
+            >
+              <Text style={styles.deleteIcon}>{deletingPropertyId === property._id ? '…' : '🗑'}</Text>
+            </Pressable>
+          </View>
           <Text style={styles.meta}>Unit count: {property.totalUnits ?? '—'}</Text>
           <Text style={styles.meta}>
             Address: {[property.address?.line1, property.address?.city, property.address?.state].filter(Boolean).join(', ') || '—'}
@@ -77,8 +124,28 @@ const styles = StyleSheet.create({
     elevation: 2
   },
   name: {
+    flex: 1,
     fontSize: typography.bodyL,
     color: colors.textPrimary,
+    fontFamily: 'Inter_600SemiBold'
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm
+  },
+  deleteButton: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface
+  },
+  deleteIcon: {
+    fontSize: 16,
+    color: colors.danger,
     fontFamily: 'Inter_600SemiBold'
   },
   meta: {
