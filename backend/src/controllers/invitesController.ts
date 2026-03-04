@@ -18,6 +18,10 @@ export const createInvite = async (req: Request, res: Response): Promise<Respons
       return res.status(400).json({ message: 'email, role, and organizationId are required' })
     }
 
+    if (role !== 'VENDOR') {
+      return res.status(400).json({ message: 'Invites are only supported for vendors.' })
+    }
+
     const invite = await Invite.create({
       email: email.toLowerCase(),
       role,
@@ -28,7 +32,18 @@ export const createInvite = async (req: Request, res: Response): Promise<Respons
       accepted: false
     })
 
-    return res.status(201).json(invite)
+    const testInviteLink = `rentora://invite/${invite.token}`
+
+    return res.status(201).json({
+      ...invite.toObject(),
+      testInviteLink,
+      testing: {
+        token: invite.token,
+        email: invite.email,
+        role: invite.role,
+        expiresAt: invite.expiresAt
+      }
+    })
   } catch (error) {
     return res.status(500).json({ message: 'Failed to create invite', error })
   }

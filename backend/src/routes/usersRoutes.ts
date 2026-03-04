@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  createTenantUser,
   deleteUser,
   getUserById,
   getUsers,
@@ -8,6 +9,7 @@ import {
 
 const router = Router()
 
+router.post('/tenant', createTenantUser)
 router.get('/', getUsers)
 router.get('/:id', getUserById)
 router.patch('/:id', updateUser)

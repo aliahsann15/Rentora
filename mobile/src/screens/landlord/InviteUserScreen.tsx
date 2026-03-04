@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
+import { useAppAlert } from '../../hooks/useAppAlert'
 import { LandlordUsersStackParamList } from '../../navigation/types'
 import { api } from '../../services/api'
 import { colors, radius, spacing, typography } from '../../utils/theme'
@@ -15,11 +16,26 @@ interface UnitItem {
   unitNumber: string
 }
 
+interface InviteResponse {
+  token: string
+  email: string
+  role: 'LANDLORD' | 'TENANT' | 'VENDOR'
+  testInviteLink?: string
+}
+
+interface CreateTenantResponse {
+  message: string
+  emailDelivered: boolean
+  resetPasswordLink: string
+  temporaryPassword: string
+}
+
 export const InviteUserScreen = ({ navigation }: Props) => {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'TENANT' | 'VENDOR'>('TENANT')
   const [units, setUnits] = useState<UnitItem[]>([])
   const [unitId, setUnitId] = useState<string>('')
+  const { showAlert } = useAppAlert()
 
   const loadUnits = async () => {
     const response = await api.get<UnitItem[]>('/units')
@@ -35,13 +51,54 @@ export const InviteUserScreen = ({ navigation }: Props) => {
       return
     }
 
-    await api.post('/invites', {
+    if (role === 'TENANT') {
+      const response = await api.post<CreateTenantResponse>('/users/tenant', {
+        email,
+        name: email.split('@')[0],
+        unitId: unitId || undefined
+      })
+
+      showAlert({
+        title: response.data.emailDelivered ? 'Tenant Added' : 'Tenant Added (Testing Mode)',
+        message: `${response.data.message}\n\nTemporary Password (Testing):\n${response.data.temporaryPassword}`,
+        link: {
+          url: response.data.resetPasswordLink,
+          label: response.data.resetPasswordLink
+        },
+        actions: [
+          {
+            text: 'Done',
+            style: 'default',
+            onPress: () => navigation.goBack()
+          }
+        ]
+      })
+      return
+    }
+
+    const response = await api.post<InviteResponse>('/invites', {
       email,
       role,
-      unitId: role === 'TENANT' ? unitId || undefined : undefined
+      unitId: undefined
     })
 
-    navigation.goBack()
+    const link = response.data.testInviteLink || `rentora://invite/${response.data.token}`
+
+    showAlert({
+      title: 'Invite created (Testing Mode)',
+      message: `No SMTP is configured yet.\n\nTap the link below to open invite registration.\n\nToken:\n${response.data.token}`,
+      link: {
+        url: link,
+        label: link
+      },
+      actions: [
+        {
+          text: 'Done',
+          style: 'default',
+          onPress: () => navigation.goBack()
+        }
+      ]
+    })
   }
 
   return (

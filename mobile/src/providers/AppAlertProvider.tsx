@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useCallback, useMemo, useState } from 'react'
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { AppButton } from '../components/AppButton'
 import { colors, radius, shadows, spacing, typography } from '../utils/theme'
 
@@ -15,6 +15,10 @@ export interface AppAlertOptions {
   title: string
   message?: string
   actions?: AppAlertAction[]
+  link?: {
+    url: string
+    label?: string
+  }
 }
 
 interface AppAlertContextValue {
@@ -48,6 +52,18 @@ export const AppAlertProvider = ({ children }: { children: ReactNode }) => {
     action.onPress?.()
   }, [])
 
+  const handleLinkPress = useCallback(async () => {
+    if (!activeAlert?.link?.url) {
+      return
+    }
+
+    try {
+      await Linking.openURL(activeAlert.link.url)
+    } catch {
+      return
+    }
+  }, [activeAlert])
+
   const contextValue = useMemo(
     () => ({
       showAlert,
@@ -73,6 +89,11 @@ export const AppAlertProvider = ({ children }: { children: ReactNode }) => {
             <View style={styles.headerAccent} />
             <Text style={styles.title}>{activeAlert?.title}</Text>
             {activeAlert?.message ? <Text style={styles.message}>{activeAlert.message}</Text> : null}
+            {activeAlert?.link?.url ? (
+              <Pressable onPress={handleLinkPress}>
+                <Text style={styles.linkText}>{activeAlert.link.label || activeAlert.link.url}</Text>
+              </Pressable>
+            ) : null}
 
             <View style={styles.actionsRow}>
               {(activeAlert?.actions || [defaultAction]).map((action, index) => (
@@ -127,6 +148,11 @@ const styles = StyleSheet.create({
     fontSize: typography.bodyM,
     color: colors.textSecondary,
     fontFamily: 'Inter_400Regular'
+  },
+  linkText: {
+    color: colors.primary,
+    fontSize: typography.bodyM,
+    fontFamily: 'Inter_600SemiBold'
   },
   actionsRow: {
     marginTop: spacing.sm,
