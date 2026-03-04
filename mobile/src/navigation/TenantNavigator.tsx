@@ -8,7 +8,7 @@ import {
   TenantTabParamList,
   TenantRequestsStackParamList
 } from './types'
-import { screenOptions, defaultTabOptions } from './screenOptions'
+import { defaultTabOptions } from './screenOptions'
 import { MyRequestsScreen } from '../screens/tenant/MyRequestsScreen'
 import { TenantRequestDetailsScreen } from '../screens/tenant/TenantRequestDetailsScreen'
 import { NewRequestScreen } from '../screens/tenant/NewRequestScreen'
@@ -23,7 +23,7 @@ const RequestStackNavigator = createNativeStackNavigator<TenantRequestsStackPara
 
 const RequestDetailsStack = () => {
   return (
-    <RequestStackNavigator.Navigator screenOptions={screenOptions.requestDetail}>
+    <RequestStackNavigator.Navigator screenOptions={{ headerShown: false }}>
       <RequestStackNavigator.Screen
         name={ROUTES.MY_REQUESTS_LIST}
         component={MyRequestsScreen}

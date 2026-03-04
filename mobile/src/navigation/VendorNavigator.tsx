@@ -8,7 +8,7 @@ import {
   VendorTabParamList,
   VendorRequestsStackParamList
 } from './types'
-import { screenOptions, defaultTabOptions } from './screenOptions'
+import { defaultTabOptions } from './screenOptions'
 import { AssignedRequestsScreen } from '../screens/vendor/AssignedRequestsScreen'
 import { VendorRequestDetailsScreen } from '../screens/vendor/VendorRequestDetailsScreen'
 import { ROUTES } from './routes'
@@ -22,7 +22,7 @@ const RequestStackNavigator = createNativeStackNavigator<VendorRequestsStackPara
 
 const RequestDetailsStack = () => {
   return (
-    <RequestStackNavigator.Navigator screenOptions={screenOptions.requestDetail}>
+    <RequestStackNavigator.Navigator screenOptions={{ headerShown: false }}>
       <RequestStackNavigator.Screen
         name={ROUTES.ASSIGNED_REQUESTS_LIST}
         component={AssignedRequestsScreen}

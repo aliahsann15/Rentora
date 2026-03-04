@@ -32,7 +32,7 @@ const UsersStack = createNativeStackNavigator<LandlordUsersStackParamList>()
 
 const RequestsNavigator = () => {
   return (
-    <RequestsStack.Navigator>
+    <RequestsStack.Navigator screenOptions={{ headerShown: false }}>
       <RequestsStack.Screen name={ROUTES.REQUESTS_LIST} component={RequestsListScreen} options={{ title: 'Requests' }} />
       <RequestsStack.Screen name={ROUTES.REQUEST_DETAILS} component={RequestDetailsScreen} options={{ title: 'Request Details' }} />
       <RequestsStack.Screen name={ROUTES.ASSIGN_VENDOR} component={AssignVendorScreen} options={{ title: 'Assign Vendor' }} />
@@ -42,7 +42,7 @@ const RequestsNavigator = () => {
 
 const PropertiesNavigator = () => {
   return (
-    <PropertiesStack.Navigator>
+    <PropertiesStack.Navigator screenOptions={{ headerShown: false }}>
       <PropertiesStack.Screen name={ROUTES.PROPERTIES_LIST} component={PropertiesListScreen} options={{ title: 'Properties' }} />
       <PropertiesStack.Screen name={ROUTES.ADD_PROPERTY} component={AddPropertyScreen} options={{ title: 'Add Property' }} />
       <PropertiesStack.Screen name={ROUTES.PROPERTY_DETAILS} component={PropertyDetailsScreen} options={{ title: 'Property Details' }} />
@@ -54,7 +54,7 @@ const PropertiesNavigator = () => {
 
 const UsersNavigator = () => {
   return (
-    <UsersStack.Navigator>
+    <UsersStack.Navigator screenOptions={{ headerShown: false }}>
       <UsersStack.Screen name={ROUTES.USERS_LIST} component={UsersListScreen} options={{ title: 'Users' }} />
       <UsersStack.Screen name={ROUTES.INVITE_USER} component={InviteUserScreen} options={{ title: 'Invite User' }} />
       <UsersStack.Screen name={ROUTES.VENDOR_DETAILS} component={VendorDetailsScreen} options={{ title: 'Vendor Details' }} />
