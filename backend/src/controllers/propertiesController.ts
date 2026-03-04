@@ -37,6 +37,10 @@ export const createProperty = async (req: Request, res: Response): Promise<Respo
       return res.status(400).json({ message: 'organizationId, name, and address are required' })
     }
 
+    if (!address.line1 || !address.city || !address.state || !address.country || !address.zip) {
+      return res.status(400).json({ message: 'address.line1, city, state, country, and zip are required' })
+    }
+
     const property = await Property.create({
       organizationId,
       name,
@@ -46,6 +50,14 @@ export const createProperty = async (req: Request, res: Response): Promise<Respo
 
     return res.status(201).json(property)
   } catch (error) {
+    const validationMessage = (error as { name?: string; message?: string }).name === 'ValidationError'
+      ? (error as { message?: string }).message
+      : undefined
+
+    if (validationMessage) {
+      return res.status(400).json({ message: validationMessage })
+    }
+
     return res.status(500).json({ message: 'Failed to create property', error })
   }
 }
