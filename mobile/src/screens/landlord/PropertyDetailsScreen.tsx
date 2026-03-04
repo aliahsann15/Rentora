@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
@@ -26,7 +27,7 @@ export const PropertyDetailsScreen = ({ route, navigation }: Props) => {
   const [property, setProperty] = useState<PropertyItem | null>(null)
   const [units, setUnits] = useState<UnitItem[]>([])
 
-  const loadPropertyDetails = async () => {
+  const loadPropertyDetails = useCallback(async () => {
     const [propertyRes, unitsRes] = await Promise.all([
       api.get<PropertyItem>(`/properties/${route.params.propertyId}`),
       api.get<UnitItem[]>('/units')
@@ -34,11 +35,13 @@ export const PropertyDetailsScreen = ({ route, navigation }: Props) => {
 
     setProperty(propertyRes.data)
     setUnits(unitsRes.data.filter((unit) => unit.propertyId === route.params.propertyId))
-  }
-
-  useEffect(() => {
-    loadPropertyDetails()
   }, [route.params.propertyId])
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadPropertyDetails()
+    }, [loadPropertyDetails])
+  )
 
   const occupiedCount = useMemo(() => units.filter((unit) => unit.status === 'OCCUPIED').length, [units])
   const vacantCount = useMemo(() => units.filter((unit) => unit.status === 'VACANT').length, [units])
