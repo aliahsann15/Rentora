@@ -20,17 +20,17 @@ export const UsersListScreen = ({ navigation }: Props) => {
   const [activeTab, setActiveTab] = useState<'TENANT' | 'VENDOR'>('TENANT')
   const [users, setUsers] = useState<UserItem[]>([])
 
-  useEffect(() => {
-    const load = async () => {
-      const response = await api.get<UserItem[]>(`/users?role=${activeTab}`)
-      setUsers(response.data)
-    }
+  const loadUsers = async () => {
+    const response = await api.get<UserItem[]>(`/users?role=${activeTab}`)
+    setUsers(response.data)
+  }
 
-    load()
+  useEffect(() => {
+    loadUsers()
   }, [activeTab])
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={loadUsers}>
       <Text style={styles.title}>Users</Text>
 
       <View style={styles.innerTabs}>

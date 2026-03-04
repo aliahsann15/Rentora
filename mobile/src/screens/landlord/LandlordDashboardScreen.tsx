@@ -16,16 +16,16 @@ export const LandlordDashboardScreen = () => {
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [units, setUnits] = useState<UnitItem[]>([])
 
+  const loadDashboard = async () => {
+    const requestRes = await api.get<RequestItem[]>('/requests')
+    const unitsRes = await api.get<UnitItem[]>('/units')
+
+    setRequests(requestRes.data)
+    setUnits(unitsRes.data)
+  }
+
   useEffect(() => {
-    const load = async () => {
-      const requestRes = await api.get<RequestItem[]>('/requests')
-      const unitsRes = await api.get<UnitItem[]>('/units')
-
-      setRequests(requestRes.data)
-      setUnits(unitsRes.data)
-    }
-
-    load()
+    loadDashboard()
   }, [])
 
   const totals = useMemo(() => {
@@ -42,7 +42,7 @@ export const LandlordDashboardScreen = () => {
   const recentRequests = useMemo(() => requests.slice(0, 5), [requests])
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={loadDashboard}>
       <Text style={styles.title}>Dashboard</Text>
 
       <View style={styles.statGrid}>

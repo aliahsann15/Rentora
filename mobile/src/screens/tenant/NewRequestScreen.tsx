@@ -33,28 +33,28 @@ export const NewRequestScreen = () => {
   const [urgency, setUrgency] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM')
   const [photos, setPhotos] = useState('')
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const propertyRes = await api.get<PropertyItem[]>('/properties')
-        setProperties(propertyRes.data)
+  const loadOptions = async () => {
+    try {
+      const propertyRes = await api.get<PropertyItem[]>('/properties')
+      setProperties(propertyRes.data)
 
-        if (propertyRes.data.length === 1) {
-          setPropertyId(propertyRes.data[0]._id)
-        }
-      } catch {
-        setProperties([])
+      if (propertyRes.data.length === 1) {
+        setPropertyId(propertyRes.data[0]._id)
       }
-
-      try {
-        const unitRes = await api.get<UnitItem[]>('/units')
-        setUnits(unitRes.data)
-      } catch {
-        setUnits([])
-      }
+    } catch {
+      setProperties([])
     }
 
-    load()
+    try {
+      const unitRes = await api.get<UnitItem[]>('/units')
+      setUnits(unitRes.data)
+    } catch {
+      setUnits([])
+    }
+  }
+
+  useEffect(() => {
+    loadOptions()
   }, [])
 
   const filteredUnits = useMemo(() => {
@@ -93,7 +93,7 @@ export const NewRequestScreen = () => {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={loadOptions}>
       <Text style={styles.title}>New Request</Text>
 
       <View style={styles.card}>

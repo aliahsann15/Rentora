@@ -19,20 +19,20 @@ export const MyRequestsScreen = ({ navigation }: Props) => {
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [properties, setProperties] = useState<PropertyItem[]>([])
 
-  useEffect(() => {
-    const load = async () => {
-      const reqRes = await api.get<RequestItem[]>('/requests')
-      setRequests(reqRes.data)
+  const loadRequests = async () => {
+    const reqRes = await api.get<RequestItem[]>('/requests')
+    setRequests(reqRes.data)
 
-      try {
-        const propRes = await api.get<PropertyItem[]>('/properties')
-        setProperties(propRes.data)
-      } catch {
-        setProperties([])
-      }
+    try {
+      const propRes = await api.get<PropertyItem[]>('/properties')
+      setProperties(propRes.data)
+    } catch {
+      setProperties([])
     }
+  }
 
-    load()
+  useEffect(() => {
+    loadRequests()
   }, [])
 
   const propertyMap = useMemo(
@@ -41,7 +41,7 @@ export const MyRequestsScreen = ({ navigation }: Props) => {
   )
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={loadRequests}>
       <Text style={styles.title}>My Requests</Text>
 
       {requests.map((request) => (

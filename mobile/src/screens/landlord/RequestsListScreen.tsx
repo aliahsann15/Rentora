@@ -26,18 +26,18 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
   const [propertyId, setPropertyId] = useState<string>(route.params?.propertyId || 'ALL')
   const [propertySearch, setPropertySearch] = useState('')
 
+  const loadRequestsAndProperties = async () => {
+    const [requestRes, propertiesRes] = await Promise.all([
+      api.get<RequestItem[]>('/requests'),
+      api.get<PropertyItem[]>('/properties')
+    ])
+
+    setRequests(requestRes.data)
+    setProperties(propertiesRes.data)
+  }
+
   useEffect(() => {
-    const load = async () => {
-      const [requestRes, propertiesRes] = await Promise.all([
-        api.get<RequestItem[]>('/requests'),
-        api.get<PropertyItem[]>('/properties')
-      ])
-
-      setRequests(requestRes.data)
-      setProperties(propertiesRes.data)
-    }
-
-    load()
+    loadRequestsAndProperties()
   }, [])
 
   const filteredProperties = useMemo(() => {
@@ -62,7 +62,7 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
   }, [properties])
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={loadRequestsAndProperties}>
       <Text style={styles.title}>Requests</Text>
 
       <View style={styles.filterBlock}>

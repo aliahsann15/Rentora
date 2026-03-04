@@ -23,25 +23,25 @@ export const AssignedRequestsScreen = ({ navigation }: Props) => {
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    const loadRequests = async () => {
-      setLoading(true)
-      try {
-        const status = requestFilterStatusMap[activeFilter]
-        const response = await api.get<RequestItem[]>('/requests', {
-          params: { status }
-        })
-        setRequests(response.data)
-      } finally {
-        setLoading(false)
-      }
+  const loadRequests = async () => {
+    setLoading(true)
+    try {
+      const status = requestFilterStatusMap[activeFilter]
+      const response = await api.get<RequestItem[]>('/requests', {
+        params: { status }
+      })
+      setRequests(response.data)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadRequests()
   }, [activeFilter])
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={loadRequests}>
       <Text style={styles.title}>Assigned Requests</Text>
 
       <View style={styles.filterRow}>
