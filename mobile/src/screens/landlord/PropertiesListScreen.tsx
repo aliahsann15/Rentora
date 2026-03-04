@@ -24,14 +24,34 @@ interface PropertyItem {
   }
 }
 
+interface UnitItem {
+  _id: string
+  propertyId: string
+}
+
 export const PropertiesListScreen = ({ navigation }: Props) => {
   const [properties, setProperties] = useState<PropertyItem[]>([])
   const [deletingPropertyId, setDeletingPropertyId] = useState<string | null>(null)
   const { showAlert } = useAppAlert()
 
   const loadProperties = useCallback(async () => {
-    const response = await api.get<PropertyItem[]>('/properties')
-    setProperties(response.data)
+    const [propertiesResponse, unitsResponse] = await Promise.all([
+      api.get<PropertyItem[]>('/properties'),
+      api.get<UnitItem[]>('/units')
+    ])
+
+    const unitCountByPropertyId = unitsResponse.data.reduce<Record<string, number>>((accumulator, unit) => {
+      const count = accumulator[unit.propertyId] || 0
+      accumulator[unit.propertyId] = count + 1
+      return accumulator
+    }, {})
+
+    const propertiesWithLiveCounts = propertiesResponse.data.map((property) => ({
+      ...property,
+      totalUnits: unitCountByPropertyId[property._id] || 0
+    }))
+
+    setProperties(propertiesWithLiveCounts)
   }, [])
 
   useFocusEffect(

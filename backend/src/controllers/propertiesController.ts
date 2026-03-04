@@ -11,7 +11,38 @@ export const getProperties = async (req: Request, res: Response): Promise<Respon
     }
 
     const properties = await Property.find(filter).sort({ createdAt: -1 })
-    return res.status(200).json(properties)
+
+    if (properties.length === 0) {
+      return res.status(200).json([])
+    }
+
+    const propertyIds = properties.map((property) => property._id)
+
+    const unitCounts = await Unit.aggregate<{ _id: string; count: number }>([
+      {
+        $match: {
+          ...(organizationId ? { organizationId } : {}),
+          propertyId: { $in: propertyIds }
+        }
+      },
+      {
+        $group: {
+          _id: '$propertyId',
+          count: { $sum: 1 }
+        }
+      }
+    ])
+
+    const unitCountByPropertyId = new Map(
+      unitCounts.map((item) => [item._id.toString(), item.count])
+    )
+
+    const propertiesWithLiveCounts = properties.map((property) => ({
+      ...property.toObject(),
+      totalUnits: unitCountByPropertyId.get(property._id.toString()) || 0
+    }))
+
+    return res.status(200).json(propertiesWithLiveCounts)
   } catch (error) {
     return res.status(500).json({ message: 'Failed to fetch properties', error })
   }
