@@ -19,6 +19,7 @@ import { SplashScreen } from './src/screens/auth/SplashScreen'
 import { setUnauthorizedHandler } from './src/services/api'
 import { setupPushNotificationsForUser } from './src/services/notificationService'
 import { DeepLinkingConfig } from './src/constants/navigationConstants'
+import { AppAlertProvider } from './src/providers/AppAlertProvider'
 
 const BootstrapGate = () => {
   const dispatch = useAppDispatch()
@@ -67,9 +68,11 @@ export default function App() {
     <Provider store={store}>
       <StatusBar style='dark' />
       <PersistGate loading={<SplashScreen />} persistor={persistor}>
-        <NavigationContainer linking={DeepLinkingConfig} fallback={null}>
-          <BootstrapGate />
-        </NavigationContainer>
+        <AppAlertProvider>
+          <NavigationContainer linking={DeepLinkingConfig} fallback={null}>
+            <BootstrapGate />
+          </NavigationContainer>
+        </AppAlertProvider>
       </PersistGate>
     </Provider>
   )
