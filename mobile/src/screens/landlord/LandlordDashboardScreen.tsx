@@ -11,17 +11,26 @@ interface UnitItem {
   _id: string
 }
 
+interface PropertyItem {
+  _id: string
+}
+
 export const LandlordDashboardScreen = () => {
   const navigation = useNavigation<any>()
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [units, setUnits] = useState<UnitItem[]>([])
+  const [properties, setProperties] = useState<PropertyItem[]>([])
 
   const loadDashboard = async () => {
-    const requestRes = await api.get<RequestItem[]>('/requests')
-    const unitsRes = await api.get<UnitItem[]>('/units')
+    const [requestRes, unitsRes, propertiesRes] = await Promise.all([
+      api.get<RequestItem[]>('/requests'),
+      api.get<UnitItem[]>('/units'),
+      api.get<PropertyItem[]>('/properties')
+    ])
 
     setRequests(requestRes.data)
     setUnits(unitsRes.data)
+    setProperties(propertiesRes.data)
   }
 
   useEffect(() => {
@@ -33,11 +42,12 @@ export const LandlordDashboardScreen = () => {
     const pendingRequests = requests.filter((item) => ['NEW', 'DONE'].includes(item.status)).length
 
     return {
+      totalProperties: properties.length,
       totalUnits: units.length,
       activeRequests,
       pendingRequests
     }
-  }, [requests, units])
+  }, [requests, units, properties])
 
   const recentRequests = useMemo(() => requests.slice(0, 5), [requests])
 
@@ -46,6 +56,11 @@ export const LandlordDashboardScreen = () => {
       <Text style={styles.title}>Dashboard</Text>
 
       <View style={styles.statGrid}>
+        <Pressable style={styles.statCard} onPress={() => navigation.navigate(ROUTES.PROPERTIES, { screen: ROUTES.PROPERTIES_LIST })}>
+          <Text style={styles.statValue}>{totals.totalProperties}</Text>
+          <Text style={styles.statLabel}>Total Properties</Text>
+        </Pressable>
+
         <Pressable style={styles.statCard} onPress={() => navigation.navigate(ROUTES.REQUESTS, { screen: ROUTES.REQUESTS_LIST })}>
           <Text style={styles.statValue}>{totals.totalUnits}</Text>
           <Text style={styles.statLabel}>Total Units</Text>
@@ -94,9 +109,12 @@ const styles = StyleSheet.create({
     color: colors.textPrimary
   },
   statGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm
   },
   statCard: {
+    width: '48%',
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.md,
