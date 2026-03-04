@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { StyleSheet, Text, View } from 'react-native'
+import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { LandlordUsersStackParamList } from '../../navigation/types'
 import { api } from '../../services/api'
@@ -22,19 +23,19 @@ interface VendorItem {
 export const VendorDetailsScreen = ({ route }: Props) => {
   const [vendor, setVendor] = useState<VendorItem | null>(null)
 
-  useEffect(() => {
-    const load = async () => {
-      const response = await api.get<VendorItem[]>('/vendors')
-      const selected = response.data.find((item) => item._id === route.params.vendorId || (item.userId as any)?._id === route.params.vendorId)
-      setVendor(selected || null)
-    }
+  const loadVendor = async () => {
+    const response = await api.get<VendorItem[]>('/vendors')
+    const selected = response.data.find((item) => item._id === route.params.vendorId || (item.userId as any)?._id === route.params.vendorId)
+    setVendor(selected || null)
+  }
 
-    load()
+  useEffect(() => {
+    loadVendor()
   }, [route.params.vendorId])
 
   return (
-    <ScreenContainer>
-      <Text style={styles.title}>Vendor Details</Text>
+    <ScreenContainer onRefresh={loadVendor}>
+      <SubScreenHeader title='Vendor Details' />
 
       <View style={styles.card}>
         <Text style={styles.label}>Name</Text>
@@ -57,11 +58,6 @@ export const VendorDetailsScreen = ({ route }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: typography.headingL,
-    color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

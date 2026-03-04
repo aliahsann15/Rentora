@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { StyleSheet, Text, View } from 'react-native'
+import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
 import { TenantRequestsStackParamList } from '../../navigation/types'
@@ -12,26 +13,26 @@ type Props = NativeStackScreenProps<TenantRequestsStackParamList, 'TenantRequest
 export const TenantRequestDetailsScreen = ({ route }: Props) => {
   const [request, setRequest] = useState<RequestItem | null>(null)
 
-  useEffect(() => {
-    const load = async () => {
-      const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
-      setRequest(response.data)
-    }
+  const loadRequest = async () => {
+    const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
+    setRequest(response.data)
+  }
 
-    load()
+  useEffect(() => {
+    loadRequest()
   }, [route.params.requestId])
 
   if (!request) {
     return (
-      <ScreenContainer>
-        <Text style={styles.title}>Request Details</Text>
+      <ScreenContainer onRefresh={loadRequest}>
+        <SubScreenHeader title='Request Details' />
       </ScreenContainer>
     )
   }
 
   return (
-    <ScreenContainer>
-      <Text style={styles.title}>Request Details</Text>
+    <ScreenContainer onRefresh={loadRequest}>
+      <SubScreenHeader title='Request Details' />
 
       <View style={styles.card}>
         <Text style={styles.label}>Status</Text>
@@ -52,11 +53,6 @@ export const TenantRequestDetailsScreen = ({ route }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: typography.headingL,
-    color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

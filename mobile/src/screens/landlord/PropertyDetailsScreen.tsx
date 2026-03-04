@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { LandlordPropertiesStackParamList } from '../../navigation/types'
 import { ROUTES } from '../../navigation/routes'
@@ -25,26 +26,26 @@ export const PropertyDetailsScreen = ({ route, navigation }: Props) => {
   const [property, setProperty] = useState<PropertyItem | null>(null)
   const [units, setUnits] = useState<UnitItem[]>([])
 
+  const loadPropertyDetails = async () => {
+    const [propertyRes, unitsRes] = await Promise.all([
+      api.get<PropertyItem>(`/properties/${route.params.propertyId}`),
+      api.get<UnitItem[]>('/units')
+    ])
+
+    setProperty(propertyRes.data)
+    setUnits(unitsRes.data.filter((unit) => unit.propertyId === route.params.propertyId))
+  }
+
   useEffect(() => {
-    const load = async () => {
-      const [propertyRes, unitsRes] = await Promise.all([
-        api.get<PropertyItem>(`/properties/${route.params.propertyId}`),
-        api.get<UnitItem[]>('/units')
-      ])
-
-      setProperty(propertyRes.data)
-      setUnits(unitsRes.data.filter((unit) => unit.propertyId === route.params.propertyId))
-    }
-
-    load()
+    loadPropertyDetails()
   }, [route.params.propertyId])
 
   const occupiedCount = useMemo(() => units.filter((unit) => unit.status === 'OCCUPIED').length, [units])
   const vacantCount = useMemo(() => units.filter((unit) => unit.status === 'VACANT').length, [units])
 
   return (
-    <ScreenContainer>
-      <Text style={styles.title}>{property?.name || 'Property Details'}</Text>
+    <ScreenContainer onRefresh={loadPropertyDetails}>
+      <SubScreenHeader title={property?.name || 'Property Details'} />
 
       <View style={styles.summaryRow}>
         <View style={styles.summaryCard}>
@@ -73,11 +74,6 @@ export const PropertyDetailsScreen = ({ route, navigation }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: typography.headingL,
-    color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
-  },
   summaryRow: {
     flexDirection: 'row',
     gap: spacing.sm

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
+import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
 import { api, RequestItem } from '../../services/api'
@@ -14,13 +15,13 @@ type Props = NativeStackScreenProps<LandlordRequestsStackParamList, 'RequestDeta
 export const RequestDetailsScreen = ({ route, navigation }: Props) => {
   const [request, setRequest] = useState<RequestItem | null>(null)
 
-  useEffect(() => {
-    const load = async () => {
-      const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
-      setRequest(response.data)
-    }
+  const loadRequest = async () => {
+    const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
+    setRequest(response.data)
+  }
 
-    load()
+  useEffect(() => {
+    loadRequest()
   }, [route.params.requestId])
 
   const updateStatus = async (status: 'ASSIGNED' | 'IN_PROGRESS' | 'DONE') => {
@@ -38,15 +39,15 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
 
   if (!request) {
     return (
-      <ScreenContainer>
-        <Text style={styles.title}>Request Details</Text>
+      <ScreenContainer onRefresh={loadRequest}>
+        <SubScreenHeader title='Request Details' />
       </ScreenContainer>
     )
   }
 
   return (
-    <ScreenContainer>
-      <Text style={styles.title}>Request Details</Text>
+    <ScreenContainer onRefresh={loadRequest}>
+      <SubScreenHeader title='Request Details' />
 
       <View style={styles.card}>
         <Text style={styles.section}>Tenant Info</Text>
@@ -100,11 +101,6 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: typography.headingL,
-    color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

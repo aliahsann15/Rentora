@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
+import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { LandlordPropertiesStackParamList } from '../../navigation/types'
 import { api } from '../../services/api'
@@ -20,18 +21,18 @@ export const EditUnitScreen = ({ route, navigation }: Props) => {
   const [unitNumber, setUnitNumber] = useState('')
   const [status, setStatus] = useState<'OCCUPIED' | 'VACANT'>('VACANT')
 
-  useEffect(() => {
-    const load = async () => {
-      const response = await api.get<UnitItem[]>('/units')
-      const selected = response.data.find((item) => item._id === route.params.unitId)
-      if (selected) {
-        setUnit(selected)
-        setUnitNumber(selected.unitNumber)
-        setStatus(selected.status)
-      }
+  const loadUnit = async () => {
+    const response = await api.get<UnitItem[]>('/units')
+    const selected = response.data.find((item) => item._id === route.params.unitId)
+    if (selected) {
+      setUnit(selected)
+      setUnitNumber(selected.unitNumber)
+      setStatus(selected.status)
     }
+  }
 
-    load()
+  useEffect(() => {
+    loadUnit()
   }, [route.params.unitId])
 
   const onSave = async () => {
@@ -48,8 +49,8 @@ export const EditUnitScreen = ({ route, navigation }: Props) => {
   }
 
   return (
-    <ScreenContainer>
-      <Text style={styles.title}>Edit Unit</Text>
+    <ScreenContainer onRefresh={loadUnit}>
+      <SubScreenHeader title='Edit Unit' />
 
       <View style={styles.card}>
         <TextInput
@@ -76,11 +77,6 @@ export const EditUnitScreen = ({ route, navigation }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: typography.headingL,
-    color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

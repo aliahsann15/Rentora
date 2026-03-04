@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
+import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { api } from '../../services/api'
 import { LandlordPropertiesStackParamList } from '../../navigation/types'
@@ -245,7 +246,7 @@ export const AddPropertyScreen = ({ navigation }: Props) => {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Add Property</Text>
+      <SubScreenHeader title='Add Property' />
       <View style={styles.card}>
         <TextInput value={name} onChangeText={setName} placeholder='Property Name' placeholderTextColor={colors.textMuted} style={styles.input} />
         <TextInput value={line1} onChangeText={setLine1} placeholder='Address Line' placeholderTextColor={colors.textMuted} style={styles.input} />
@@ -284,11 +285,6 @@ export const AddPropertyScreen = ({ navigation }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: typography.headingL,
-    color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

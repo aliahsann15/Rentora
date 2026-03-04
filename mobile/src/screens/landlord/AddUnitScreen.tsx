@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
+import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { LandlordPropertiesStackParamList } from '../../navigation/types'
 import { api } from '../../services/api'
@@ -28,7 +29,7 @@ export const AddUnitScreen = ({ route, navigation }: Props) => {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Add Unit</Text>
+      <SubScreenHeader title='Add Unit' />
       <View style={styles.card}>
         <TextInput
           value={unitNumber}
@@ -44,11 +45,6 @@ export const AddUnitScreen = ({ route, navigation }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: typography.headingL,
-    color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

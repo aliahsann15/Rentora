@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
+import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
 import { VendorRequestsStackParamList } from '../../navigation/types'
@@ -126,15 +127,15 @@ export const VendorRequestDetailsScreen = ({ route }: Props) => {
 
   if (!request) {
     return (
-      <ScreenContainer>
-        <Text style={styles.title}>Request Details</Text>
+      <ScreenContainer onRefresh={loadRequest}>
+        <SubScreenHeader title='Request Details' />
       </ScreenContainer>
     )
   }
 
   return (
-    <ScreenContainer>
-      <Text style={styles.title}>Request Details</Text>
+    <ScreenContainer onRefresh={loadRequest}>
+      <SubScreenHeader title='Request Details' />
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Property info</Text>
@@ -207,11 +208,6 @@ export const VendorRequestDetailsScreen = ({ route }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: typography.headingL,
-    color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
