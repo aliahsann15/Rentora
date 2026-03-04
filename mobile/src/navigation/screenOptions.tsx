@@ -45,6 +45,7 @@ export const detailStackOptions: NativeStackNavigationOptions = {
 // ============================================================================
 
 export const defaultTabOptions: BottomTabNavigationOptions = {
+  headerShown: false,
   headerStyle: {
     backgroundColor: colors.surface
   },
