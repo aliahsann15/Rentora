@@ -56,6 +56,10 @@ export const register = createAsyncThunk(
       await setTokens(response.data.accessToken, response.data.refreshToken)
       return response.data.user
     } catch (error: unknown) {
+      const networkError = error as { message?: string; response?: { data?: { message?: string } } }
+      if (!networkError.response) {
+        return rejectWithValue('Cannot connect to server. Ensure backend is running and API URL is reachable.')
+      }
       const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
       return rejectWithValue(message || 'Unable to process request. Please try again.')
     }

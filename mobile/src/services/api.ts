@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { getAccessToken, removeTokens } from './authStorage'
 
-export const API_BASE_URL = 'http://192.168.100.141:5000/api'
+const configuredBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim()
+export const API_BASE_URL = configuredBaseUrl || 'http://192.168.100.141:5000/api'
 
 let onUnauthorized: (() => void) | null = null
 
