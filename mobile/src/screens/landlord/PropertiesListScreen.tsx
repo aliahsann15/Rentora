@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ScreenContainer } from '../../components/ScreenContainer'
@@ -91,7 +92,11 @@ export const PropertiesListScreen = ({ navigation }: Props) => {
               }}
               disabled={deletingPropertyId === property._id}
             >
-              <Text style={styles.deleteIcon}>{deletingPropertyId === property._id ? '…' : '🗑'}</Text>
+              {deletingPropertyId === property._id ? (
+                <Text style={styles.deleteIcon}>…</Text>
+              ) : (
+                <Ionicons name='trash-outline' size={18} color={colors.danger} />
+              )}
             </Pressable>
           </View>
           <Text style={styles.meta}>Unit count: {property.totalUnits ?? '—'}</Text>
