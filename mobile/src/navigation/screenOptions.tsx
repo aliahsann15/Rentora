@@ -58,9 +58,9 @@ export const defaultTabOptions: BottomTabNavigationOptions = {
     backgroundColor: colors.surface,
     borderTopColor: colors.divider,
     borderTopWidth: 1,
-    height: 60,
-    paddingBottom: 8,
-    paddingTop: 8
+    height: 78,
+    paddingBottom: 18,
+    paddingTop: 6
   },
   tabBarLabelStyle: {
     fontFamily: 'Inter_500Medium',
