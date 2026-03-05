@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
-import { Invite, RefreshToken, Unit, User } from '../models'
+import { Invite, RefreshToken, Unit, User, Vendor } from '../models'
 import { getTokenExpiryDate, signAccessToken, signRefreshToken } from '../utils/auth'
 import { sendEmail } from '../services/emailService'
 
@@ -23,27 +23,79 @@ export const createInvite = async (req: Request, res: Response): Promise<Respons
       return res.status(400).json({ message: 'Invites are only supported for vendors.' })
     }
 
+    const normalizedEmail = email.toLowerCase()
+
+    const generatedPassword = 'Vendor1'
+    const passwordHash = await bcrypt.hash(generatedPassword, 12)
+    const existingUser = await User.findOne({ email: normalizedEmail })
+
+    let user = existingUser
+
+    if (!user) {
+      const vendorName = normalizedEmail.split('@')[0]
+
+      user = await User.create({
+        name: vendorName,
+        email: normalizedEmail,
+        passwordHash,
+        role: 'VENDOR',
+        organizationId,
+        isActive: true
+      })
+    } else {
+      if (user.organizationId?.toString() !== organizationId.toString() || user.role !== 'VENDOR') {
+        return res.status(409).json({
+          message: 'A user with this email already exists and cannot be auto-invited as vendor.'
+        })
+      }
+
+      user.passwordHash = passwordHash
+      user.isActive = true
+      await user.save()
+    }
+
+    await Vendor.updateOne(
+      { userId: user._id, organizationId },
+      {
+        $setOnInsert: {
+          userId: user._id,
+          organizationId,
+          services: [],
+          totalJobs: 0
+        },
+        $set: { isActive: true }
+      },
+      { upsert: true }
+    )
+
     const invite = await Invite.create({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       role,
       organizationId,
       unitId,
       token: randomUUID(),
       expiresAt: getTokenExpiryDate(expiresInDays || 7),
-      accepted: false
+      accepted: true
     })
 
-    const inviteLink = `rentora://invite/${invite.token}`
+    let emailResult: { delivered: boolean; reason?: string }
 
-    const emailResult = await sendEmail({
-      to: invite.email,
-      subject: 'You are invited to join Rentora',
-      text: `You have been invited to join Rentora as a ${invite.role}. Complete your registration using this link: ${inviteLink}`,
-      html: `<p>You have been invited to join <b>Rentora</b> as a ${invite.role}.</p><p>Complete your registration using this link:</p><p><a href="${inviteLink}">${inviteLink}</a></p>`
-    })
+    try {
+      emailResult = await sendEmail({
+        to: invite.email,
+        subject: 'Your Rentora vendor account is ready',
+        text: `Your vendor account has been created for Rentora.\n\nLogin email: ${normalizedEmail}\nTemporary password: ${generatedPassword}`,
+        html: `<p>Your vendor account has been created for <b>Rentora</b>.</p><p><b>Login email:</b> ${normalizedEmail}<br/><b>Temporary password:</b> ${generatedPassword}</p>`
+      })
+    } catch (error) {
+      emailResult = { delivered: false, reason: error instanceof Error ? error.message : 'EMAIL_SEND_FAILED' }
+    }
 
     return res.status(201).json({
       ...invite.toObject(),
+      autoAccepted: true,
+      userId: user._id,
+      generatedPassword,
       emailDelivered: emailResult.delivered,
       emailFailureReason: emailResult.reason
     })
