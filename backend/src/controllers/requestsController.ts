@@ -26,6 +26,47 @@ const readRequestId = (req: Request): string => {
   return value
 }
 
+const toIdString = (value: unknown): string | undefined => {
+  if (!value) {
+    return undefined
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (typeof value === 'object' && value !== null && '_id' in (value as Record<string, unknown>)) {
+    const nestedId = (value as { _id?: unknown })._id
+    return nestedId ? String(nestedId) : undefined
+  }
+
+  return String(value)
+}
+
+const serializeRequest = (request: Record<string, unknown>) => {
+  const property = request.propertyId as Record<string, unknown> | string | undefined
+  const unit = request.unitId as Record<string, unknown> | string | undefined
+  const propertyName =
+    property && typeof property === 'object' && 'name' in property
+      ? String(property.name || '')
+      : undefined
+  const unitNumber =
+    unit && typeof unit === 'object' && 'unitNumber' in unit
+      ? String(unit.unitNumber || '')
+      : undefined
+
+  return {
+    ...request,
+    _id: toIdString(request._id),
+    propertyId: toIdString(request.propertyId),
+    unitId: toIdString(request.unitId),
+    tenantId: toIdString(request.tenantId),
+    vendorId: toIdString(request.vendorId),
+    propertyName: propertyName || undefined,
+    unitNumber: unitNumber || undefined
+  }
+}
+
 export const getRequests = async (req: Request, res: Response): Promise<Response> => {
   try {
     const currentUser = readCurrentUser(req)
@@ -46,8 +87,13 @@ export const getRequests = async (req: Request, res: Response): Promise<Response
       filter.propertyId = propertyId
     }
 
-    const requests = await MaintenanceRequest.find(filter).sort({ createdAt: -1 })
-    return res.status(200).json(requests)
+    const requests = await MaintenanceRequest.find(filter)
+      .sort({ createdAt: -1 })
+      .populate({ path: 'propertyId', select: 'name' })
+      .populate({ path: 'unitId', select: 'unitNumber' })
+      .lean()
+
+    return res.status(200).json(requests.map((item) => serializeRequest(item as unknown as Record<string, unknown>)))
   } catch (error) {
     return res.status(500).json({ message: 'Failed to fetch requests', error })
   }
@@ -122,10 +168,13 @@ export const getRequestById = async (req: Request, res: Response): Promise<Respo
     const filter = await getScopedRequestFilter(currentUser)
     const requestId = readRequestId(req)
     const request = await MaintenanceRequest.findOne({ _id: requestId, ...filter })
+      .populate({ path: 'propertyId', select: 'name' })
+      .populate({ path: 'unitId', select: 'unitNumber' })
+      .lean()
     if (!request) {
       return res.status(404).json({ message: 'Request not found' })
     }
-    return res.status(200).json(request)
+    return res.status(200).json(serializeRequest(request as unknown as Record<string, unknown>))
   } catch (error) {
     return res.status(500).json({ message: 'Failed to fetch request', error })
   }

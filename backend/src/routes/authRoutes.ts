@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   forgotPassword,
   getMe,
+  getMyTenantAssignment,
   login,
   logout,
   refresh,
@@ -18,5 +19,6 @@ router.post('/logout', logout)
 router.post('/forgot-password', forgotPassword)
 router.post('/reset-password', resetPassword)
 router.get('/me', getMe)
+router.get('/me-assignment', getMyTenantAssignment)
 
 export { router as authRoutes }

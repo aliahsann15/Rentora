@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ScreenContainer } from '../../components/ScreenContainer'
@@ -10,39 +10,46 @@ import { colors, radius, spacing, typography } from '../../utils/theme'
 
 type Props = NativeStackScreenProps<TenantRequestsStackParamList, 'MyRequestsList'>
 
-interface PropertyItem {
-  _id: string
-  name: string
+interface TenantAssignmentLookup {
+  propertyId: string
+  propertyName?: string
+  unitId: string
+  unitNumber: string
 }
 
 export const MyRequestsScreen = ({ navigation }: Props) => {
   const [requests, setRequests] = useState<RequestItem[]>([])
-  const [properties, setProperties] = useState<PropertyItem[]>([])
 
   const loadRequests = async () => {
     try {
-      const reqRes = await api.get<RequestItem[]>('/requests')
-      setRequests(reqRes.data)
+      const [reqRes, assignmentRes] = await Promise.all([
+        api.get<RequestItem[]>('/requests'),
+        api.get<TenantAssignmentLookup>('/auth/me-assignment').catch(() => null)
+      ])
+
+      const assignment = assignmentRes?.data
+
+      const normalizedRequests = reqRes.data.map((request) => ({
+        ...request,
+        propertyName:
+          request.propertyName ||
+          (assignment && request.propertyId === assignment.propertyId
+            ? assignment.propertyName
+            : undefined),
+        unitNumber:
+          request.unitNumber ||
+          (assignment && request.unitId === assignment.unitId ? assignment.unitNumber : undefined)
+      }))
+
+      setRequests(normalizedRequests)
     } catch {
       setRequests([])
-    }
-
-    try {
-      const propRes = await api.get<PropertyItem[]>('/properties')
-      setProperties(propRes.data)
-    } catch {
-      setProperties([])
     }
   }
 
   useEffect(() => {
     void loadRequests()
   }, [])
-
-  const propertyMap = useMemo(
-    () => Object.fromEntries(properties.map((property) => [property._id, property.name])),
-    [properties]
-  )
 
   return (
     <ScreenContainer onRefresh={loadRequests}>
@@ -59,7 +66,7 @@ export const MyRequestsScreen = ({ navigation }: Props) => {
             <StatusBadge status={request.status} />
           </View>
           <Text style={styles.meta}>Date: {new Date(request.createdAt).toLocaleDateString()}</Text>
-          <Text style={styles.meta}>Property: {propertyMap[request.propertyId || ''] || '—'}</Text>
+          <Text style={styles.meta}>Property: {request.propertyName || '—'}</Text>
         </Pressable>
       ))}
     </ScreenContainer>

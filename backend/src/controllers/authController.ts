@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
-import { Invite, Organization, RefreshToken, Unit, User } from '../models'
+import { Invite, Organization, Property, RefreshToken, Unit, User } from '../models'
 import {
   getTokenExpiryDate,
   signAccessToken,
@@ -291,6 +291,77 @@ export const getMe = async (req: Request, res: Response): Promise<Response> => {
     }
 
     return res.status(200).json({ user })
+  } catch (error) {
+    return res.status(401).json({ message: 'Unauthorized', error })
+  }
+}
+
+export const getMyTenantAssignment = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const token = getBearerToken(req)
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const decoded = verifyToken(token)
+    const user = await User.findById(decoded.userId).select('_id role organizationId isActive')
+    if (!user || !user.isActive || !user.organizationId) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    if (user.role !== 'TENANT') {
+      return res.status(403).json({ message: 'Only tenants can access unit assignment' })
+    }
+
+    const assignedUnit = await Unit.findOne({
+      organizationId: user.organizationId,
+      tenantId: user._id
+    })
+      .populate({ path: 'propertyId', select: 'name' })
+      .select('_id propertyId unitNumber')
+
+    if (!assignedUnit) {
+      return res.status(404).json({ message: 'No assigned unit found' })
+    }
+
+    const rawProperty = assignedUnit.propertyId as unknown
+
+    const propertyId = (() => {
+      if (!rawProperty) {
+        return ''
+      }
+
+      if (typeof rawProperty === 'string') {
+        return rawProperty
+      }
+
+      if (typeof rawProperty === 'object' && rawProperty !== null && '_id' in rawProperty) {
+        const nestedId = (rawProperty as { _id?: unknown })._id
+        if (nestedId) {
+          return String(nestedId)
+        }
+      }
+
+      const asString = String(rawProperty)
+      return asString === '[object Object]' ? '' : asString
+    })()
+
+    let propertyName =
+      typeof rawProperty === 'object' && rawProperty !== null && 'name' in rawProperty
+        ? String((rawProperty as { name?: unknown }).name || '')
+        : undefined
+
+    if ((!propertyName || !propertyName.trim()) && propertyId) {
+      const property = await Property.findById(propertyId).select('name').lean()
+      propertyName = property?.name || undefined
+    }
+
+    return res.status(200).json({
+      unitId: String(assignedUnit._id),
+      propertyId,
+      propertyName: propertyName || undefined,
+      unitNumber: assignedUnit.unitNumber
+    })
   } catch (error) {
     return res.status(401).json({ message: 'Unauthorized', error })
   }

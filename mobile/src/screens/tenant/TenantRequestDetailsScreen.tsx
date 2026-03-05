@@ -10,13 +10,39 @@ import { colors, radius, spacing, typography } from '../../utils/theme'
 
 type Props = NativeStackScreenProps<TenantRequestsStackParamList, 'TenantRequestDetails'>
 
+interface TenantAssignmentLookup {
+  propertyId: string
+  propertyName?: string
+  unitId: string
+  unitNumber: string
+}
+
 export const TenantRequestDetailsScreen = ({ route }: Props) => {
   const [request, setRequest] = useState<RequestItem | null>(null)
 
   const loadRequest = async () => {
     try {
-      const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
-      setRequest(response.data)
+      const [requestRes, assignmentRes] = await Promise.all([
+        api.get<RequestItem>(`/requests/${route.params.requestId}`),
+        api.get<TenantAssignmentLookup>('/auth/me-assignment').catch(() => null)
+      ])
+
+      const assignment = assignmentRes?.data
+      const normalizedRequest: RequestItem = {
+        ...requestRes.data,
+        propertyName:
+          requestRes.data.propertyName ||
+          (assignment && requestRes.data.propertyId === assignment.propertyId
+            ? assignment.propertyName
+            : undefined),
+        unitNumber:
+          requestRes.data.unitNumber ||
+          (assignment && requestRes.data.unitId === assignment.unitId
+            ? assignment.unitNumber
+            : undefined)
+      }
+
+      setRequest(normalizedRequest)
     } catch {
       setRequest(null)
     }
@@ -37,6 +63,14 @@ export const TenantRequestDetailsScreen = ({ route }: Props) => {
   return (
     <ScreenContainer onRefresh={loadRequest}>
       <SubScreenHeader title='Request Details' />
+
+      <View style={styles.card}>
+        <Text style={styles.label}>Property</Text>
+        <Text style={styles.value}>{request.propertyName || '—'}</Text>
+
+        <Text style={styles.label}>Unit Number</Text>
+        <Text style={styles.value}>{request.unitNumber || '—'}</Text>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.label}>Status</Text>

@@ -1,20 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
-import { StyleSheet, Text, TextInput, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { api } from '../../services/api'
 import { createMaintenanceRequest, clearRequestError } from '../../slices/requestsSlice'
 import { useAppDispatch } from '../../hooks/useAppDispatch'
 import { useAppSelector } from '../../hooks/useAppSelector'
+import { useAppAlert } from '../../hooks/useAppAlert'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
-interface PropertyItem {
-  _id: string
-  name: string
-}
-
-interface UnitItem {
-  _id: string
+interface AssignedUnitItem {
+  unitId: string
   propertyId: string
   unitNumber: string
 }
@@ -22,57 +18,97 @@ interface UnitItem {
 export const NewRequestScreen = () => {
   const dispatch = useAppDispatch()
   const { creating, error } = useAppSelector((state) => state.requests)
-
-  const [properties, setProperties] = useState<PropertyItem[]>([])
-  const [units, setUnits] = useState<UnitItem[]>([])
+  const currentUser = useAppSelector((state) => state.auth.user)
+  const { showToast } = useAppAlert()
 
   const [propertyId, setPropertyId] = useState('')
   const [unitId, setUnitId] = useState('')
+  const [unitNumber, setUnitNumber] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [urgency, setUrgency] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM')
-  const [photos, setPhotos] = useState('')
+  const [images, setImages] = useState<string[]>([])
 
-  const loadOptions = async () => {
-    try {
-      const propertyRes = await api.get<PropertyItem[]>('/properties')
-      setProperties(propertyRes.data)
-
-      if (propertyRes.data.length === 1) {
-        setPropertyId(propertyRes.data[0]._id)
-      }
-    } catch {
-      setProperties([])
+  const loadTenantAssignment = async () => {
+    if (!currentUser?._id) {
+      return
     }
 
     try {
-      const unitRes = await api.get<UnitItem[]>('/units')
-      setUnits(unitRes.data)
+      const unitRes = await api.get<AssignedUnitItem>('/auth/me-assignment')
+
+      const assignedUnit = unitRes.data
+
+      if (!assignedUnit) {
+        setPropertyId('')
+        setUnitId('')
+        setUnitNumber('')
+        showToast({
+          type: 'error',
+          message: 'No assigned unit found for your account.'
+        })
+        return
+      }
+
+      setPropertyId(assignedUnit.propertyId)
+      setUnitId(assignedUnit.unitId)
+      setUnitNumber(assignedUnit.unitNumber)
     } catch {
-      setUnits([])
+      setPropertyId('')
+      setUnitId('')
+      setUnitNumber('')
     }
   }
 
   useEffect(() => {
-    void loadOptions()
-  }, [])
+    void loadTenantAssignment()
+  }, [currentUser?._id])
 
-  const filteredUnits = useMemo(() => {
-    if (!propertyId) {
-      return units
+  const pickImages = async () => {
+    try {
+      const imagePickerModule = await import('expo-image-picker')
+
+      const permission = await imagePickerModule.requestMediaLibraryPermissionsAsync()
+      if (!permission.granted) {
+        showToast({
+          type: 'error',
+          message: 'Photo permission is required to select images.'
+        })
+        return
+      }
+
+      const result = await imagePickerModule.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        quality: 0.7,
+        selectionLimit: 5
+      })
+
+      if (result.canceled) {
+        return
+      }
+
+      const nextImages = result.assets.map((asset) => asset.uri)
+      setImages((previous) => Array.from(new Set([...previous, ...nextImages])))
+    } catch {
+      showToast({
+        type: 'error',
+        message: 'Image picker is unavailable in the current app build. Rebuild the dev client and try again.'
+      })
+      return
     }
+  }
 
-    return units.filter((unit) => unit.propertyId === propertyId)
-  }, [units, propertyId])
-
-  useEffect(() => {
-    if (filteredUnits.length === 1) {
-      setUnitId(filteredUnits[0]._id)
-    }
-  }, [filteredUnits])
+  const removeImage = (uri: string) => {
+    setImages((previous) => previous.filter((item) => item !== uri))
+  }
 
   const onSubmit = () => {
     if (!propertyId || !unitId || !title || !description) {
+      showToast({
+        type: 'error',
+        message: 'Property and unit must be assigned before submitting a request.'
+      })
       return
     }
 
@@ -82,38 +118,24 @@ export const NewRequestScreen = () => {
         propertyId,
         unitId,
         title,
-        description: photos ? `${description}\n\nPhotos: ${photos}` : description,
-        urgency
+        description,
+        urgency,
+        images
       })
     )
 
     setTitle('')
     setDescription('')
-    setPhotos('')
+    setImages([])
   }
 
   return (
-    <ScreenContainer onRefresh={loadOptions}>
+    <ScreenContainer onRefresh={loadTenantAssignment}>
       <Text style={styles.title}>New Request</Text>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Property (auto if 1)</Text>
-        <TextInput
-          style={styles.input}
-          value={propertyId}
-          onChangeText={setPropertyId}
-          placeholder='Property ID'
-          placeholderTextColor={colors.textMuted}
-        />
-
-        <Text style={styles.label}>Unit</Text>
-        <TextInput
-          style={styles.input}
-          value={unitId}
-          onChangeText={setUnitId}
-          placeholder={filteredUnits[0] ? `Suggested: ${filteredUnits[0]._id}` : 'Unit ID'}
-          placeholderTextColor={colors.textMuted}
-        />
+        <Text style={styles.label}>Assigned Unit</Text>
+        <Text style={styles.assignmentValue}>{unitNumber ? `Unit ${unitNumber}` : 'No unit assigned'}</Text>
 
         <Text style={styles.label}>Title</Text>
         <TextInput
@@ -136,19 +158,44 @@ export const NewRequestScreen = () => {
 
         <Text style={styles.label}>Urgency</Text>
         <View style={styles.urgencyRow}>
-          <AppButton title='Low' variant='secondary' style={styles.urgencyBtn} onPress={() => setUrgency('LOW')} />
-          <AppButton title='Medium' variant='secondary' style={styles.urgencyBtn} onPress={() => setUrgency('MEDIUM')} />
-          <AppButton title='High' variant='danger' style={styles.urgencyBtn} onPress={() => setUrgency('HIGH')} />
+          {(['LOW', 'MEDIUM', 'HIGH'] as const).map((value) => (
+            <Pressable
+              key={value}
+              style={[
+                styles.urgencyChip,
+                urgency === value && styles.urgencyChipActive,
+                value === 'HIGH' && urgency === value && styles.urgencyChipHighActive
+              ]}
+              onPress={() => setUrgency(value)}
+            >
+              <Text
+                style={[
+                  styles.urgencyChipText,
+                  urgency === value && styles.urgencyChipTextActive,
+                  value === 'HIGH' && urgency === value && styles.urgencyChipHighTextActive
+                ]}
+              >
+                {value === 'LOW' ? 'Low' : value === 'MEDIUM' ? 'Medium' : 'High'}
+              </Text>
+            </Pressable>
+          ))}
         </View>
 
         <Text style={styles.label}>Upload Photos</Text>
-        <TextInput
-          style={styles.input}
-          value={photos}
-          onChangeText={setPhotos}
-          placeholder='Photo URLs (comma separated)'
-          placeholderTextColor={colors.textMuted}
-        />
+        <AppButton title='Select Images' variant='secondary' onPress={pickImages} />
+        <Text style={styles.selectedImagesText}>{images.length > 0 ? `${images.length} image(s) selected` : 'No images selected'}</Text>
+        {images.length > 0 ? (
+          <View style={styles.imageGrid}>
+            {images.map((uri) => (
+              <View key={uri} style={styles.imageThumbWrap}>
+                <Image source={{ uri }} style={styles.imageThumb} />
+                <Pressable style={styles.removeImageButton} onPress={() => removeImage(uri)}>
+                  <Text style={styles.removeImageButtonText}>×</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -197,8 +244,77 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm
   },
-  urgencyBtn: {
-    flex: 1
+  urgencyChip: {
+    flex: 1,
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface
+  },
+  urgencyChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft
+  },
+  urgencyChipHighActive: {
+    borderColor: colors.danger,
+    backgroundColor: colors.danger
+  },
+  urgencyChipText: {
+    fontSize: typography.bodyM,
+    fontFamily: 'Inter_600SemiBold',
+    color: colors.textSecondary
+  },
+  urgencyChipTextActive: {
+    color: colors.primary
+  },
+  urgencyChipHighTextActive: {
+    color: colors.surface
+  },
+  assignmentValue: {
+    fontSize: typography.bodyM,
+    color: colors.textPrimary,
+    fontFamily: 'Inter_600SemiBold'
+  },
+  selectedImagesText: {
+    fontSize: typography.caption,
+    color: colors.textSecondary,
+    fontFamily: 'Inter_500Medium'
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm
+  },
+  imageThumbWrap: {
+    width: 84,
+    height: 84,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    backgroundColor: colors.divider
+  },
+  imageThumb: {
+    width: '100%',
+    height: '100%'
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.danger
+  },
+  removeImageButtonText: {
+    color: colors.surface,
+    fontSize: typography.caption,
+    fontFamily: 'Inter_700Bold',
+    lineHeight: 14
   },
   error: {
     color: colors.danger,
