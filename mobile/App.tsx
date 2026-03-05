@@ -42,7 +42,7 @@ const BootstrapGate = () => {
   }, [dispatch])
 
   useEffect(() => {
-    setupPushNotificationsForUser(Boolean(user))
+    void setupPushNotificationsForUser(Boolean(user))
   }, [user])
 
   if (initializing) {

@@ -22,19 +22,25 @@ export const LandlordDashboardScreen = () => {
   const [properties, setProperties] = useState<PropertyItem[]>([])
 
   const loadDashboard = async () => {
-    const [requestRes, unitsRes, propertiesRes] = await Promise.all([
-      api.get<RequestItem[]>('/requests'),
-      api.get<UnitItem[]>('/units'),
-      api.get<PropertyItem[]>('/properties')
-    ])
+    try {
+      const [requestRes, unitsRes, propertiesRes] = await Promise.all([
+        api.get<RequestItem[]>('/requests'),
+        api.get<UnitItem[]>('/units'),
+        api.get<PropertyItem[]>('/properties')
+      ])
 
-    setRequests(requestRes.data)
-    setUnits(unitsRes.data)
-    setProperties(propertiesRes.data)
+      setRequests(requestRes.data)
+      setUnits(unitsRes.data)
+      setProperties(propertiesRes.data)
+    } catch {
+      setRequests([])
+      setUnits([])
+      setProperties([])
+    }
   }
 
   useEffect(() => {
-    loadDashboard()
+    void loadDashboard()
   }, [])
 
   const totals = useMemo(() => {

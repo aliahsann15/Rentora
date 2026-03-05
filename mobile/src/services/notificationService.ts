@@ -76,8 +76,12 @@ export const setupPushNotificationsForUser = async (isAuthenticated: boolean) =>
     return
   }
 
-  await api.post('/notifications/register-token', {
-    token,
-    device: Platform.OS
-  })
+  try {
+    await api.post('/notifications/register-token', {
+      token,
+      device: Platform.OS
+    })
+  } catch {
+    return
+  }
 }

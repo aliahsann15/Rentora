@@ -22,17 +22,21 @@ export const EditUnitScreen = ({ route, navigation }: Props) => {
   const [status, setStatus] = useState<'OCCUPIED' | 'VACANT'>('VACANT')
 
   const loadUnit = async () => {
-    const response = await api.get<UnitItem[]>('/units')
-    const selected = response.data.find((item) => item._id === route.params.unitId)
-    if (selected) {
-      setUnit(selected)
-      setUnitNumber(selected.unitNumber)
-      setStatus(selected.status)
+    try {
+      const response = await api.get<UnitItem[]>('/units')
+      const selected = response.data.find((item) => item._id === route.params.unitId)
+      if (selected) {
+        setUnit(selected)
+        setUnitNumber(selected.unitNumber)
+        setStatus(selected.status)
+      }
+    } catch {
+      setUnit(null)
     }
   }
 
   useEffect(() => {
-    loadUnit()
+    void loadUnit()
   }, [route.params.unitId])
 
   const onSave = async () => {
@@ -40,12 +44,16 @@ export const EditUnitScreen = ({ route, navigation }: Props) => {
       return
     }
 
-    await api.patch(`/units/${unit._id}`, {
-      unitNumber,
-      status
-    })
+    try {
+      await api.patch(`/units/${unit._id}`, {
+        unitNumber,
+        status
+      })
 
-    navigation.goBack()
+      navigation.goBack()
+    } catch {
+      return
+    }
   }
 
   return (

@@ -31,13 +31,15 @@ export const AssignedRequestsScreen = ({ navigation }: Props) => {
         params: { status }
       })
       setRequests(response.data)
+    } catch {
+      setRequests([])
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadRequests()
+    void loadRequests()
   }, [activeFilter])
 
   return (

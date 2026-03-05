@@ -24,13 +24,17 @@ export const VendorDetailsScreen = ({ route }: Props) => {
   const [vendor, setVendor] = useState<VendorItem | null>(null)
 
   const loadVendor = async () => {
-    const response = await api.get<VendorItem[]>('/vendors')
-    const selected = response.data.find((item) => item._id === route.params.vendorId || (item.userId as any)?._id === route.params.vendorId)
-    setVendor(selected || null)
+    try {
+      const response = await api.get<VendorItem[]>('/vendors')
+      const selected = response.data.find((item) => item._id === route.params.vendorId || (item.userId as any)?._id === route.params.vendorId)
+      setVendor(selected || null)
+    } catch {
+      setVendor(null)
+    }
   }
 
   useEffect(() => {
-    loadVendor()
+    void loadVendor()
   }, [route.params.vendorId])
 
   return (

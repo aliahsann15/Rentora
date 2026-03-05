@@ -54,7 +54,7 @@ export const NewRequestScreen = () => {
   }
 
   useEffect(() => {
-    loadOptions()
+    void loadOptions()
   }, [])
 
   const filteredUnits = useMemo(() => {

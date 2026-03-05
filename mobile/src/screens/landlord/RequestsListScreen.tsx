@@ -30,17 +30,22 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
   const [isUrgencyOpen, setIsUrgencyOpen] = useState(false)
 
   const loadRequestsAndProperties = async () => {
-    const [requestRes, propertiesRes] = await Promise.all([
-      api.get<RequestItem[]>('/requests'),
-      api.get<PropertyItem[]>('/properties')
-    ])
+    try {
+      const [requestRes, propertiesRes] = await Promise.all([
+        api.get<RequestItem[]>('/requests'),
+        api.get<PropertyItem[]>('/properties')
+      ])
 
-    setRequests(requestRes.data)
-    setProperties(propertiesRes.data)
+      setRequests(requestRes.data)
+      setProperties(propertiesRes.data)
+    } catch {
+      setRequests([])
+      setProperties([])
+    }
   }
 
   useEffect(() => {
-    loadRequestsAndProperties()
+    void loadRequestsAndProperties()
   }, [])
 
   const filteredProperties = useMemo(() => {

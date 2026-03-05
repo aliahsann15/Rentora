@@ -20,8 +20,12 @@ export const MyRequestsScreen = ({ navigation }: Props) => {
   const [properties, setProperties] = useState<PropertyItem[]>([])
 
   const loadRequests = async () => {
-    const reqRes = await api.get<RequestItem[]>('/requests')
-    setRequests(reqRes.data)
+    try {
+      const reqRes = await api.get<RequestItem[]>('/requests')
+      setRequests(reqRes.data)
+    } catch {
+      setRequests([])
+    }
 
     try {
       const propRes = await api.get<PropertyItem[]>('/properties')
@@ -32,7 +36,7 @@ export const MyRequestsScreen = ({ navigation }: Props) => {
   }
 
   useEffect(() => {
-    loadRequests()
+    void loadRequests()
   }, [])
 
   const propertyMap = useMemo(

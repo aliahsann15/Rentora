@@ -40,43 +40,49 @@ export const VendorRequestDetailsScreen = ({ route }: Props) => {
   const requestId = route.params.requestId
 
   const loadRequest = async () => {
-    const requestResponse = await api.get<RequestItem>(`/requests/${requestId}`)
-    const requestData = requestResponse.data
-    setRequest(requestData)
+    try {
+      const requestResponse = await api.get<RequestItem>(`/requests/${requestId}`)
+      const requestData = requestResponse.data
+      setRequest(requestData)
 
-    const jobs: Promise<unknown>[] = []
+      const jobs: Promise<unknown>[] = []
 
-    if (requestData.propertyId) {
-      jobs.push(
-        api
-          .get<PropertyDetails>(`/properties/${requestData.propertyId}`)
-          .then((res) => {
-            setProperty(res.data)
-          })
-          .catch(() => {
-            setProperty(null)
-          })
-      )
+      if (requestData.propertyId) {
+        jobs.push(
+          api
+            .get<PropertyDetails>(`/properties/${requestData.propertyId}`)
+            .then((res) => {
+              setProperty(res.data)
+            })
+            .catch(() => {
+              setProperty(null)
+            })
+        )
+      }
+
+      if (requestData.tenantId) {
+        jobs.push(
+          api
+            .get<TenantDetails>(`/users/${requestData.tenantId}`)
+            .then((res) => {
+              setTenant(res.data)
+            })
+            .catch(() => {
+              setTenant(null)
+            })
+        )
+      }
+
+      await Promise.all(jobs)
+    } catch {
+      setRequest(null)
+      setProperty(null)
+      setTenant(null)
     }
-
-    if (requestData.tenantId) {
-      jobs.push(
-        api
-          .get<TenantDetails>(`/users/${requestData.tenantId}`)
-          .then((res) => {
-            setTenant(res.data)
-          })
-          .catch(() => {
-            setTenant(null)
-          })
-      )
-    }
-
-    await Promise.all(jobs)
   }
 
   useEffect(() => {
-    loadRequest()
+    void loadRequest()
   }, [requestId])
 
   const imageList = useMemo(() => {
@@ -96,6 +102,8 @@ export const VendorRequestDetailsScreen = ({ route }: Props) => {
     try {
       await api.patch(`/requests/${request._id}/status`, { status })
       await loadRequest()
+    } catch {
+      return
     } finally {
       setWorking(false)
     }
@@ -120,6 +128,8 @@ export const VendorRequestDetailsScreen = ({ route }: Props) => {
       await api.patch(`/requests/${request._id}/images`, { images })
       setCompletionPhotos('')
       await loadRequest()
+    } catch {
+      return
     } finally {
       setWorking(false)
     }

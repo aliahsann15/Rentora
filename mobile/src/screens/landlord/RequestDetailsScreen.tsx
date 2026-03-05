@@ -16,12 +16,16 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
   const [request, setRequest] = useState<RequestItem | null>(null)
 
   const loadRequest = async () => {
-    const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
-    setRequest(response.data)
+    try {
+      const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
+      setRequest(response.data)
+    } catch {
+      setRequest(null)
+    }
   }
 
   useEffect(() => {
-    loadRequest()
+    void loadRequest()
   }, [route.params.requestId])
 
   const updateStatus = async (status: 'ASSIGNED' | 'IN_PROGRESS' | 'DONE') => {
@@ -29,8 +33,12 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
       return
     }
 
-    const response = await api.patch<RequestItem>(`/requests/${request._id}/status`, { status })
-    setRequest(response.data)
+    try {
+      const response = await api.patch<RequestItem>(`/requests/${request._id}/status`, { status })
+      setRequest(response.data)
+    } catch {
+      return
+    }
   }
 
   const markDone = async () => {

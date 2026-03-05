@@ -26,12 +26,16 @@ export const AssignVendorScreen = ({ route, navigation }: Props) => {
   const [selectedVendor, setSelectedVendor] = useState<string>('')
 
   const loadVendors = async () => {
-    const response = await api.get<VendorItem[]>('/vendors')
-    setVendors(response.data)
+    try {
+      const response = await api.get<VendorItem[]>('/vendors')
+      setVendors(response.data)
+    } catch {
+      setVendors([])
+    }
   }
 
   useEffect(() => {
-    loadVendors()
+    void loadVendors()
   }, [])
 
   const services = useMemo(() => {
@@ -54,8 +58,12 @@ export const AssignVendorScreen = ({ route, navigation }: Props) => {
       return
     }
 
-    await api.patch(`/requests/${route.params.requestId}/assign`, { vendorId: selectedVendor })
-    navigation.goBack()
+    try {
+      await api.patch(`/requests/${route.params.requestId}/assign`, { vendorId: selectedVendor })
+      navigation.goBack()
+    } catch {
+      return
+    }
   }
 
   return (

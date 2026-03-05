@@ -14,12 +14,16 @@ export const TenantRequestDetailsScreen = ({ route }: Props) => {
   const [request, setRequest] = useState<RequestItem | null>(null)
 
   const loadRequest = async () => {
-    const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
-    setRequest(response.data)
+    try {
+      const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
+      setRequest(response.data)
+    } catch {
+      setRequest(null)
+    }
   }
 
   useEffect(() => {
-    loadRequest()
+    void loadRequest()
   }, [route.params.requestId])
 
   if (!request) {

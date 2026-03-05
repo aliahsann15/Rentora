@@ -39,7 +39,7 @@ export const InviteRegistrationScreen = ({ route }: Props) => {
       }
     }
 
-    runValidation()
+    void runValidation()
   }, [dispatch, token])
 
   const onSubmit = () => {
