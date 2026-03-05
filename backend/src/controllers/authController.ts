@@ -231,6 +231,33 @@ export const resetPassword = async (req: Request, res: Response): Promise<Respon
   }
 }
 
+export const changePassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const userId = req.user?.userId
+    const { password } = req.body as { password?: string }
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    if (!password || password.trim().length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' })
+    }
+
+    const user = await User.findById(userId).select('+passwordHash')
+    if (!user || !user.isActive) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    user.passwordHash = await bcrypt.hash(password, 12)
+    await user.save()
+
+    return res.status(200).json({ message: 'Password updated successfully' })
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to update password', error })
+  }
+}
+
 export const refresh = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { refreshToken } = req.body as { refreshToken?: string }

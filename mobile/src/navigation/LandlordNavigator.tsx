@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import {
   LandlordPropertiesStackParamList,
   LandlordRequestsStackParamList,
+  LandlordSettingsStackParamList,
   LandlordTabParamList,
   LandlordUsersStackParamList
 } from './types'
@@ -23,12 +24,14 @@ import { UsersListScreen } from '../screens/landlord/UsersListScreen'
 import { InviteUserScreen } from '../screens/landlord/InviteUserScreen'
 import { VendorDetailsScreen } from '../screens/landlord/VendorDetailsScreen'
 import { SettingsScreen } from '../screens/landlord/SettingsScreen'
+import { ChangePasswordScreen } from '../screens/landlord/ChangePasswordScreen'
 import { ROUTES } from './routes'
 
 const Tab = createBottomTabNavigator<LandlordTabParamList>()
 const RequestsStack = createNativeStackNavigator<LandlordRequestsStackParamList>()
 const PropertiesStack = createNativeStackNavigator<LandlordPropertiesStackParamList>()
 const UsersStack = createNativeStackNavigator<LandlordUsersStackParamList>()
+const SettingsStack = createNativeStackNavigator<LandlordSettingsStackParamList>()
 
 const RequestsNavigator = () => {
   return (
@@ -62,6 +65,15 @@ const UsersNavigator = () => {
   )
 }
 
+const SettingsNavigator = () => {
+  return (
+    <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
+      <SettingsStack.Screen name={ROUTES.SETTINGS} component={SettingsScreen} options={{ title: 'Settings' }} />
+      <SettingsStack.Screen name={ROUTES.CHANGE_PASSWORD} component={ChangePasswordScreen} options={{ title: 'Change Password' }} />
+    </SettingsStack.Navigator>
+  )
+}
+
 export const LandlordNavigator = () => {
   const accentColor = getRoleAccent('LANDLORD')
 
@@ -88,7 +100,7 @@ export const LandlordNavigator = () => {
       <Tab.Screen name={ROUTES.REQUESTS} component={RequestsNavigator} options={{ headerShown: false }} />
       <Tab.Screen name={ROUTES.PROPERTIES} component={PropertiesNavigator} options={{ headerShown: false }} />
       <Tab.Screen name={ROUTES.USERS} component={UsersNavigator} options={{ headerShown: false }} />
-      <Tab.Screen name={ROUTES.SETTINGS} component={SettingsScreen} />
+      <Tab.Screen name={ROUTES.SETTINGS} component={SettingsNavigator} options={{ headerShown: false }} />
     </Tab.Navigator>
   )
 }

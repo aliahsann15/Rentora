@@ -28,6 +28,7 @@ export const ROUTES = {
   INVITE_USER: 'InviteUser',
   VENDOR_DETAILS: 'VendorDetails',
   SETTINGS: 'Settings',
+  CHANGE_PASSWORD: 'ChangePassword',
 
   MY_REQUESTS: 'MyRequests',
   MY_REQUESTS_LIST: 'MyRequestsList',

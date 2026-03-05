@@ -57,7 +57,7 @@ export type LandlordTabParamList = {
   Requests: NavigatorScreenParams<LandlordRequestsStackParamList>
   Properties: NavigatorScreenParams<LandlordPropertiesStackParamList>
   Users: NavigatorScreenParams<LandlordUsersStackParamList>
-  Settings: undefined
+  Settings: NavigatorScreenParams<LandlordSettingsStackParamList>
 }
 
 export type LandlordTabScreenProps<T extends keyof LandlordTabParamList> = CompositeScreenProps<
@@ -97,6 +97,14 @@ export type LandlordUsersStackParamList = {
 
 export type LandlordUsersStackScreenProps<T extends keyof LandlordUsersStackParamList> =
   NativeStackScreenProps<LandlordUsersStackParamList, T>
+
+export type LandlordSettingsStackParamList = {
+  Settings: undefined
+  ChangePassword: undefined
+}
+
+export type LandlordSettingsStackScreenProps<T extends keyof LandlordSettingsStackParamList> =
+  NativeStackScreenProps<LandlordSettingsStackParamList, T>
 
 // ============================================================================
 // TENANT TABS & STACK
