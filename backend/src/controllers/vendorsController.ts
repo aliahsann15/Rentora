@@ -5,12 +5,18 @@ import { getOrganizationIdFromRequest } from '../utils/requestContext'
 export const getVendors = async (req: Request, res: Response): Promise<Response> => {
   try {
     const organizationId = getOrganizationIdFromRequest(req)
+    const userId = typeof req.query.userId === 'string' ? req.query.userId : undefined
     const filter: Record<string, unknown> = {}
     if (organizationId) {
       filter.organizationId = organizationId
     }
+    if (userId) {
+      filter.userId = userId
+    }
 
-    const vendors = await Vendor.find(filter).sort({ createdAt: -1 })
+    const vendors = await Vendor.find(filter)
+      .populate({ path: 'userId', select: 'name email' })
+      .sort({ createdAt: -1 })
     return res.status(200).json(vendors)
   } catch (error) {
     return res.status(500).json({ message: 'Failed to fetch vendors', error })

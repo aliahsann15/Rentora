@@ -34,6 +34,7 @@ export const getUsers = async (req: Request, res: Response): Promise<Response> =
       .map((user) => user._id.toString())
 
     let assignedUnitByTenantId = new Map<string, string>()
+    let vendorServicesByUserId = new Map<string, string[]>()
 
     if (tenantIds.length > 0) {
       const unitsFilter: Record<string, unknown> = {
@@ -57,10 +58,38 @@ export const getUsers = async (req: Request, res: Response): Promise<Response> =
       }, new Map<string, string>())
     }
 
+    const vendorUserIds = users
+      .filter((user) => user.role === 'VENDOR')
+      .map((user) => user._id.toString())
+
+    if (vendorUserIds.length > 0) {
+      const vendorsFilter: Record<string, unknown> = {
+        userId: { $in: vendorUserIds }
+      }
+
+      if (organizationId) {
+        vendorsFilter.organizationId = organizationId
+      }
+
+      const vendors = await Vendor.find(vendorsFilter)
+        .select('userId services')
+        .sort({ createdAt: -1 })
+
+      vendorServicesByUserId = vendors.reduce<Map<string, string[]>>((accumulator, vendor) => {
+        const userId = vendor.userId?.toString()
+        if (userId && !accumulator.has(userId)) {
+          accumulator.set(userId, vendor.services || [])
+        }
+        return accumulator
+      }, new Map<string, string[]>())
+    }
+
     const usersWithAssignedUnit = users.map((user) => ({
       ...user.toObject(),
       assignedUnitNumber:
-        user.role === 'TENANT' ? (assignedUnitByTenantId.get(user._id.toString()) || null) : null
+        user.role === 'TENANT' ? (assignedUnitByTenantId.get(user._id.toString()) || null) : null,
+      vendorServices:
+        user.role === 'VENDOR' ? (vendorServicesByUserId.get(user._id.toString()) || []) : undefined
     }))
 
     return res.status(200).json(usersWithAssignedUnit)

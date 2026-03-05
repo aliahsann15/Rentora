@@ -25,8 +25,10 @@ export const VendorDetailsScreen = ({ route }: Props) => {
 
   const loadVendor = async () => {
     try {
-      const response = await api.get<VendorItem[]>('/vendors')
-      const selected = response.data.find((item) => item._id === route.params.vendorId || (item.userId as any)?._id === route.params.vendorId)
+      const response = await api.get<VendorItem[]>('/vendors', {
+        params: { userId: route.params.vendorId }
+      })
+      const selected = response.data[0] || null
       setVendor(selected || null)
     } catch {
       setVendor(null)

@@ -18,6 +18,7 @@ interface UserItem {
   email: string
   role: 'TENANT' | 'VENDOR' | 'LANDLORD'
   assignedUnitNumber?: string | null
+  vendorServices?: string[]
 }
 
 interface UnitItem {
@@ -155,6 +156,11 @@ export const UsersListScreen = ({ navigation }: Props) => {
               ? `Unit: ${user.assignedUnitNumber || 'Unassigned'}`
               : 'Vendor'}
           </Text>
+          {user.role === 'VENDOR' ? (
+            <Text style={styles.meta}>
+              Services: {(user.vendorServices || []).join(', ') || '—'}
+            </Text>
+          ) : null}
         </Pressable>
       ))}
 
