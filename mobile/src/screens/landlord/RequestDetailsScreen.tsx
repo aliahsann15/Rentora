@@ -12,13 +12,53 @@ import { ROUTES } from '../../navigation/routes'
 
 type Props = NativeStackScreenProps<LandlordRequestsStackParamList, 'RequestDetails'>
 
+interface PropertyItem {
+  _id: string
+  name: string
+}
+
+interface UnitItem {
+  _id: string
+  unitNumber: string
+}
+
 export const RequestDetailsScreen = ({ route, navigation }: Props) => {
   const [request, setRequest] = useState<RequestItem | null>(null)
+
+  const resolveRequestDisplayFields = async (requestData: RequestItem): Promise<RequestItem> => {
+    let propertyName = requestData.propertyName
+    let unitNumber = requestData.unitNumber
+
+    if (!propertyName && requestData.propertyId) {
+      try {
+        const propertyRes = await api.get<PropertyItem>(`/properties/${requestData.propertyId}`)
+        propertyName = propertyRes.data.name
+      } catch {}
+    }
+
+    if (!unitNumber && requestData.unitId) {
+      try {
+        const unitsRes = await api.get<UnitItem[]>(
+          requestData.propertyId ? `/units?propertyId=${requestData.propertyId}` : '/units'
+        )
+
+        const matchedUnit = unitsRes.data.find((item) => item._id === requestData.unitId)
+        unitNumber = matchedUnit?.unitNumber
+      } catch {}
+    }
+
+    return {
+      ...requestData,
+      propertyName,
+      unitNumber
+    }
+  }
 
   const loadRequest = async () => {
     try {
       const response = await api.get<RequestItem>(`/requests/${route.params.requestId}`)
-      setRequest(response.data)
+      const normalizedRequest = await resolveRequestDisplayFields(response.data)
+      setRequest(normalizedRequest)
     } catch {
       setRequest(null)
     }
@@ -35,7 +75,12 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
 
     try {
       const response = await api.patch<RequestItem>(`/requests/${request._id}/status`, { status })
-      setRequest(response.data)
+      const normalizedRequest = await resolveRequestDisplayFields({
+        ...response.data,
+        propertyName: response.data.propertyName || request.propertyName,
+        unitNumber: response.data.unitNumber || request.unitNumber
+      })
+      setRequest(normalizedRequest)
     } catch {
       return
     }
@@ -64,8 +109,8 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
 
       <View style={styles.card}>
         <Text style={styles.section}>Property + Unit</Text>
-        <Text style={styles.value}>Property: {request.propertyId || '—'}</Text>
-        <Text style={styles.value}>Unit: {request.unitId || '—'}</Text>
+        <Text style={styles.value}>Property: {request.propertyName || request.propertyId || '—'}</Text>
+        <Text style={styles.value}>Unit: {request.unitNumber || request.unitId || '—'}</Text>
       </View>
 
       <View style={styles.card}>
