@@ -83,7 +83,7 @@ export const forgotPassword = createAsyncThunk(
   'auth/forgotPassword',
   async (payload: { email: string }, { rejectWithValue }) => {
     try {
-      const response = await api.post<{ message: string; resetToken?: string }>('/auth/forgot-password', payload)
+      const response = await api.post<{ message: string }>('/auth/forgot-password', payload)
       return response.data
     } catch (error: unknown) {
       const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message

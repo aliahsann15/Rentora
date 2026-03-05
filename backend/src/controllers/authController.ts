@@ -8,6 +8,7 @@ import {
   verifyToken
 } from '../utils/auth'
 import { getBearerToken } from '../utils/requestContext'
+import { sendEmail } from '../services/emailService'
 
 const buildAuthPayload = (user: {
   _id: string
@@ -189,10 +190,17 @@ export const forgotPassword = async (req: Request, res: Response): Promise<Respo
     })
 
     const resetToken = signAccessToken(payload)
+    const resetPasswordLink = `rentora://reset-password/${resetToken}`
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Reset your Rentora password',
+      text: `We received a request to reset your Rentora password. Use this link to set a new password: ${resetPasswordLink}`,
+      html: `<p>We received a request to reset your Rentora password.</p><p>Use this link to set a new password:</p><p><a href="${resetPasswordLink}">${resetPasswordLink}</a></p>`
+    })
 
     return res.status(200).json({
-      message: 'Password reset token generated successfully.',
-      resetToken
+      message: 'If this email exists, password reset instructions have been sent.'
     })
   } catch (error) {
     return res.status(500).json({ message: 'Failed to process forgot password request', error })

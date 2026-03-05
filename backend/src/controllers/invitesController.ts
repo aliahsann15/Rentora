@@ -3,6 +3,7 @@ import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import { Invite, RefreshToken, Unit, User } from '../models'
 import { getTokenExpiryDate, signAccessToken, signRefreshToken } from '../utils/auth'
+import { sendEmail } from '../services/emailService'
 
 export const createInvite = async (req: Request, res: Response): Promise<Response> => {
   try {
@@ -32,17 +33,19 @@ export const createInvite = async (req: Request, res: Response): Promise<Respons
       accepted: false
     })
 
-    const testInviteLink = `rentora://invite/${invite.token}`
+    const inviteLink = `rentora://invite/${invite.token}`
+
+    const emailResult = await sendEmail({
+      to: invite.email,
+      subject: 'You are invited to join Rentora',
+      text: `You have been invited to join Rentora as a ${invite.role}. Complete your registration using this link: ${inviteLink}`,
+      html: `<p>You have been invited to join <b>Rentora</b> as a ${invite.role}.</p><p>Complete your registration using this link:</p><p><a href="${inviteLink}">${inviteLink}</a></p>`
+    })
 
     return res.status(201).json({
       ...invite.toObject(),
-      testInviteLink,
-      testing: {
-        token: invite.token,
-        email: invite.email,
-        role: invite.role,
-        expiresAt: invite.expiresAt
-      }
+      emailDelivered: emailResult.delivered,
+      emailFailureReason: emailResult.reason
     })
   } catch (error) {
     return res.status(500).json({ message: 'Failed to create invite', error })

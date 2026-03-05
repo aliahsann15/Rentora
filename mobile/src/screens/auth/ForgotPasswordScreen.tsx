@@ -7,12 +7,11 @@ import { useAppDispatch } from '../../hooks/useAppDispatch'
 import { useAppSelector } from '../../hooks/useAppSelector'
 import { clearAuthError, clearAuthInfoMessage, forgotPassword } from '../../slices/authSlice'
 import { AuthStackParamList } from '../../navigation/types'
-import { ROUTES } from '../../navigation/routes'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>
 
-export const ForgotPasswordScreen = ({ navigation }: Props) => {
+export const ForgotPasswordScreen = (_props: Props) => {
   const dispatch = useAppDispatch()
   const { loading, error, infoMessage } = useAppSelector((state) => state.auth)
   const [email, setEmail] = useState('')
@@ -22,10 +21,7 @@ export const ForgotPasswordScreen = ({ navigation }: Props) => {
       return
     }
 
-    const action = await dispatch(forgotPassword({ email }))
-    if (forgotPassword.fulfilled.match(action) && action.payload.resetToken) {
-      navigation.navigate(ROUTES.RESET_PASSWORD, { token: action.payload.resetToken })
-    }
+    await dispatch(forgotPassword({ email }))
   }
 
   return (

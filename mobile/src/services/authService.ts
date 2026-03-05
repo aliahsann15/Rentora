@@ -14,7 +14,7 @@ export const authService = {
   me: () => api.get<{ user: AuthResponse['user'] }>('/auth/me'),
   logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }),
   forgotPassword: (payload: { email: string }) =>
-    api.post<{ message: string; resetToken?: string }>('/auth/forgot-password', payload),
+    api.post<{ message: string }>('/auth/forgot-password', payload),
   resetPassword: (payload: { token: string; password: string }) =>
     api.post<{ message: string }>('/auth/reset-password', payload),
   validateInvite: (token: string) => api.get<InviteValidationResponse>(`/invites/validate/${token}`),

@@ -1,9 +1,10 @@
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
+import path from 'path'
 import { app } from './app'
 import { startBackgroundJobs } from './jobs/scheduler'
 
-dotenv.config()
+dotenv.config({ path: path.resolve(__dirname, '../.env') })
 
 mongoose.connect(process.env.MONGO_URI as string)
   .then(() => {
