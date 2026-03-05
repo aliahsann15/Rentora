@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Ionicons } from '@expo/vector-icons'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AppButton } from '../../components/AppButton'
@@ -18,6 +19,7 @@ export const LoginScreen = ({ navigation }: Props) => {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const onSubmit = () => {
     if (!email || !password) {
@@ -46,29 +48,46 @@ export const LoginScreen = ({ navigation }: Props) => {
           style={styles.input}
         />
 
-        <TextInput
-          value={password}
-          onChangeText={(value) => {
-            setPassword(value)
-            dispatch(clearAuthError())
-          }}
-          placeholder='Password'
-          placeholderTextColor={colors.textMuted}
-          secureTextEntry
-          style={styles.input}
-        />
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <AppButton title='Login' onPress={onSubmit} loading={loading} />
+        <View style={styles.inputRow}>
+          <TextInput
+            value={password}
+            onChangeText={(value) => {
+              setPassword(value)
+              dispatch(clearAuthError())
+            }}
+            placeholder='Password'
+            placeholderTextColor={colors.textMuted}
+            secureTextEntry={!showPassword}
+            style={styles.passwordInput}
+          />
+          <Pressable
+            accessibilityRole='button'
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            onPress={() => setShowPassword((prev) => !prev)}
+            hitSlop={8}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textMuted}
+            />
+          </Pressable>
+        </View>
 
         <Pressable onPress={() => navigation.navigate(ROUTES.FORGOT_PASSWORD)}>
           <Text style={styles.link}>Forgot Password</Text>
         </Pressable>
 
-        <Pressable onPress={() => navigation.navigate(ROUTES.REGISTER)}>
-          <Text style={styles.link}>Register</Text>
-        </Pressable>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <AppButton title='Login' onPress={onSubmit} loading={loading} />
+
+        <View style={styles.registerRow}>
+          <Text style={styles.registerPrompt}>Don't have an account?</Text>
+          <Pressable onPress={() => navigation.navigate(ROUTES.REGISTER)}>
+            <Text style={styles.registerLink}>Register</Text>
+          </Pressable>
+        </View>
       </View>
     </ScreenContainer>
   )
@@ -106,10 +125,41 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     backgroundColor: colors.surface
   },
-  link: {
-    color: colors.primary,
+  inputRow: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    height: 48,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md
+  },
+  passwordInput: {
+    flex: 1,
     fontSize: typography.bodyM,
+    color: colors.textPrimary,
+    fontFamily: 'Inter_400Regular'
+  },
+  link: {
+    marginTop: -spacing.xs,
+    color: colors.primary,
+    fontSize: typography.caption,
     fontFamily: 'Inter_500Medium'
+  },
+  registerLink: {
+    color: colors.primary,
+    fontFamily: 'Inter_500Medium'
+  },
+  registerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  registerPrompt: {
+    color: colors.textSecondary,
+    fontFamily: 'Inter_400Regular'
   },
   error: {
     color: colors.danger,

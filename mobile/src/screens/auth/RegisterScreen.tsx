@@ -1,13 +1,19 @@
 import { useState } from 'react'
-import { StyleSheet, Text, TextInput, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AppButton } from '../../components/AppButton'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { useAppDispatch } from '../../hooks/useAppDispatch'
 import { useAppSelector } from '../../hooks/useAppSelector'
 import { clearAuthError, register } from '../../slices/authSlice'
+import { AuthStackParamList } from '../../navigation/types'
+import { ROUTES } from '../../navigation/routes'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
-export const RegisterScreen = () => {
+type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>
+
+export const RegisterScreen = ({ navigation }: Props) => {
   const dispatch = useAppDispatch()
   const { loading, error } = useAppSelector((state) => state.auth)
 
@@ -15,6 +21,7 @@ export const RegisterScreen = () => {
   const [organizationName, setOrganizationName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const onSubmit = () => {
     if (!name || !organizationName || !email || !password) {
@@ -54,17 +61,31 @@ export const RegisterScreen = () => {
           style={styles.input}
         />
 
-        <TextInput
-          value={password}
-          onChangeText={(value) => {
-            setPassword(value)
-            dispatch(clearAuthError())
-          }}
-          placeholder='Password'
-          placeholderTextColor={colors.textMuted}
-          secureTextEntry
-          style={styles.input}
-        />
+        <View style={styles.inputRow}>
+          <TextInput
+            value={password}
+            onChangeText={(value) => {
+              setPassword(value)
+              dispatch(clearAuthError())
+            }}
+            placeholder='Password'
+            placeholderTextColor={colors.textMuted}
+            secureTextEntry={!showPassword}
+            style={styles.passwordInput}
+          />
+          <Pressable
+            accessibilityRole='button'
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            onPress={() => setShowPassword((prev) => !prev)}
+            hitSlop={8}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textMuted}
+            />
+          </Pressable>
+        </View>
 
         <TextInput
           value={organizationName}
@@ -80,6 +101,12 @@ export const RegisterScreen = () => {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <AppButton title='Create Account' onPress={onSubmit} loading={loading} />
+        <View style={styles.loginRow}>
+          <Text style={styles.loginPrompt}>Already have an account?</Text>
+          <Pressable onPress={() => navigation.navigate(ROUTES.LOGIN)}>
+            <Text style={styles.link}>Login</Text>
+          </Pressable>
+        </View>
       </View>
     </ScreenContainer>
   )
@@ -117,9 +144,39 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     backgroundColor: colors.surface
   },
+  inputRow: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    height: 48,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: typography.bodyM,
+    color: colors.textPrimary,
+    fontFamily: 'Inter_400Regular'
+  },
   error: {
     color: colors.danger,
     fontSize: typography.caption,
     fontFamily: 'Inter_500Medium'
-  }
+  },
+  link: {
+    color: colors.primary,
+    fontFamily: 'Inter_500Medium'
+  },
+  loginRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  loginPrompt: {
+    color: colors.textSecondary,
+    fontFamily: 'Inter_400Regular'
+  },
 })

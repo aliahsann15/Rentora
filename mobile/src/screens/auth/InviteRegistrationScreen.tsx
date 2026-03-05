@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { StyleSheet, Text, TextInput, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { useAppDispatch } from '../../hooks/useAppDispatch'
@@ -17,6 +18,7 @@ export const InviteRegistrationScreen = ({ route }: Props) => {
 
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [inviteMeta, setInviteMeta] = useState<{
     email: string
     role: 'TENANT' | 'VENDOR'
@@ -72,17 +74,31 @@ export const InviteRegistrationScreen = ({ route }: Props) => {
           style={styles.input}
         />
 
-        <TextInput
-          value={password}
-          onChangeText={(value) => {
-            setPassword(value)
-            dispatch(clearAuthError())
-          }}
-          placeholder='Password'
-          placeholderTextColor={colors.textMuted}
-          secureTextEntry
-          style={styles.input}
-        />
+        <View style={styles.inputRow}>
+          <TextInput
+            value={password}
+            onChangeText={(value) => {
+              setPassword(value)
+              dispatch(clearAuthError())
+            }}
+            placeholder='Password'
+            placeholderTextColor={colors.textMuted}
+            secureTextEntry={!showPassword}
+            style={styles.passwordInput}
+          />
+          <Pressable
+            accessibilityRole='button'
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            onPress={() => setShowPassword((prev) => !prev)}
+            hitSlop={8}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textMuted}
+            />
+          </Pressable>
+        </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -140,6 +156,22 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontFamily: 'Inter_400Regular',
     backgroundColor: colors.surface
+  },
+  inputRow: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    height: 48,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: typography.bodyM,
+    color: colors.textPrimary,
+    fontFamily: 'Inter_400Regular'
   },
   error: {
     color: colors.danger,
