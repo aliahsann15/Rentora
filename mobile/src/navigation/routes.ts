@@ -37,5 +37,6 @@ export const ROUTES = {
 
   ASSIGNED_REQUESTS: 'AssignedRequests',
   ASSIGNED_REQUESTS_LIST: 'AssignedRequestsList',
-  VENDOR_REQUEST_DETAILS: 'VendorRequestDetails'
+  VENDOR_REQUEST_DETAILS: 'VendorRequestDetails',
+  VENDOR_SERVICES: 'VendorServices'
 } as const

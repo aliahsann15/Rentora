@@ -11,6 +11,7 @@ import {
 import { defaultTabOptions } from './screenOptions'
 import { AssignedRequestsScreen } from '../screens/vendor/AssignedRequestsScreen'
 import { VendorRequestDetailsScreen } from '../screens/vendor/VendorRequestDetailsScreen'
+import { VendorServicesScreen } from '../screens/vendor/VendorServicesScreen'
 import { ROUTES } from './routes'
 
 const Tab = createBottomTabNavigator<VendorTabParamList>()
@@ -56,6 +57,7 @@ export const VendorNavigator = () => {
   const accentColor = getRoleAccent('VENDOR')
   const tabIcons: Record<keyof VendorTabParamList, string> = {
     [ROUTES.ASSIGNED_REQUESTS]: 'construct-outline',
+    [ROUTES.VENDOR_SERVICES]: 'briefcase-outline',
     [ROUTES.PROFILE]: 'settings-outline'
   }
 
@@ -76,6 +78,14 @@ export const VendorNavigator = () => {
         options={{
           title: 'Assigned Requests',
           headerShown: false
+        }}
+      />
+
+      <Tab.Screen
+        name={ROUTES.VENDOR_SERVICES}
+        component={VendorServicesScreen}
+        options={{
+          title: 'Services'
         }}
       />
 

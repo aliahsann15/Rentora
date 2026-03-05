@@ -127,6 +127,7 @@ export type TenantRequestsStackScreenProps<T extends keyof TenantRequestsStackPa
 
 export type VendorTabParamList = {
   AssignedRequests: NavigatorScreenParams<VendorRequestsStackParamList>
+  VendorServices: undefined
   Profile: undefined
 }
 
