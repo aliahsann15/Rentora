@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useCallback, useMemo, useState } from 'react'
+import { createContext, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
 import { AppButton } from '../components/AppButton'
 import { colors, radius, shadows, spacing, typography } from '../utils/theme'
@@ -21,9 +21,16 @@ export interface AppAlertOptions {
   }
 }
 
+export interface AppToastOptions {
+  type: 'success' | 'error' | 'info'
+  message: string
+  durationMs?: number
+}
+
 interface AppAlertContextValue {
   showAlert: (options: AppAlertOptions) => void
   closeAlert: () => void
+  showToast: (options: AppToastOptions) => void
 }
 
 const defaultAction: AppAlertAction = {
@@ -35,6 +42,7 @@ export const AppAlertContext = createContext<AppAlertContextValue | undefined>(u
 
 export const AppAlertProvider = ({ children }: { children: ReactNode }) => {
   const [activeAlert, setActiveAlert] = useState<AppAlertOptions | null>(null)
+  const [activeToast, setActiveToast] = useState<AppToastOptions | null>(null)
 
   const closeAlert = useCallback(() => {
     setActiveAlert(null)
@@ -45,6 +53,10 @@ export const AppAlertProvider = ({ children }: { children: ReactNode }) => {
       ...options,
       actions: options.actions && options.actions.length > 0 ? options.actions : [defaultAction]
     })
+  }, [])
+
+  const showToast = useCallback((options: AppToastOptions) => {
+    setActiveToast(options)
   }, [])
 
   const handleActionPress = useCallback((action: AppAlertAction) => {
@@ -67,10 +79,57 @@ export const AppAlertProvider = ({ children }: { children: ReactNode }) => {
   const contextValue = useMemo(
     () => ({
       showAlert,
-      closeAlert
+      closeAlert,
+      showToast
     }),
-    [showAlert, closeAlert]
+    [showAlert, closeAlert, showToast]
   )
+
+  useEffect(() => {
+    if (!activeToast) {
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      setActiveToast(null)
+    }, activeToast.durationMs || 2600)
+
+    return () => {
+      clearTimeout(timeout)
+    }
+  }, [activeToast])
+
+  const toastContainerStyle = useMemo(() => {
+    if (!activeToast) {
+      return styles.toastInfo
+    }
+
+    if (activeToast.type === 'success') {
+      return styles.toastSuccess
+    }
+
+    if (activeToast.type === 'error') {
+      return styles.toastError
+    }
+
+    return styles.toastInfo
+  }, [activeToast])
+
+  const toastTextStyle = useMemo(() => {
+    if (!activeToast) {
+      return styles.toastInfoText
+    }
+
+    if (activeToast.type === 'success') {
+      return styles.toastSuccessText
+    }
+
+    if (activeToast.type === 'error') {
+      return styles.toastErrorText
+    }
+
+    return styles.toastInfoText
+  }, [activeToast])
 
   return (
     <AppAlertContext.Provider value={contextValue}>
@@ -115,6 +174,14 @@ export const AppAlertProvider = ({ children }: { children: ReactNode }) => {
           </View>
         </View>
       </Modal>
+
+      {activeToast ? (
+        <View pointerEvents='none' style={styles.toastOverlay}>
+          <View style={[styles.toastCard, toastContainerStyle]}>
+            <Text style={[styles.toastText, toastTextStyle]}>{activeToast.message}</Text>
+          </View>
+        </View>
+      ) : null}
     </AppAlertContext.Provider>
   )
 }
@@ -167,5 +234,45 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(15, 23, 42, 0.35)',
     zIndex: 1
+  },
+  toastOverlay: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.xl,
+    alignItems: 'center'
+  },
+  toastCard: {
+    width: '100%',
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    ...shadows.card
+  },
+  toastText: {
+    fontSize: typography.bodyM,
+    fontFamily: 'Inter_600SemiBold'
+  },
+  toastSuccess: {
+    backgroundColor: colors.successSoft,
+    borderColor: colors.success
+  },
+  toastError: {
+    backgroundColor: colors.dangerSoft,
+    borderColor: colors.danger
+  },
+  toastInfo: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primaryLight
+  },
+  toastSuccessText: {
+    color: colors.success
+  },
+  toastErrorText: {
+    color: colors.danger
+  },
+  toastInfoText: {
+    color: colors.primary
   }
 })

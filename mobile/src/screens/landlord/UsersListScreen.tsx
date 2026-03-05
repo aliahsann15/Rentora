@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ScreenContainer } from '../../components/ScreenContainer'
+import { useAppAlert } from '../../hooks/useAppAlert'
 import { LandlordUsersStackParamList } from '../../navigation/types'
 import { ROUTES } from '../../navigation/routes'
 import { api } from '../../services/api'
@@ -14,20 +17,97 @@ interface UserItem {
   name: string
   email: string
   role: 'TENANT' | 'VENDOR' | 'LANDLORD'
+  assignedUnitNumber?: string | null
+}
+
+interface UnitItem {
+  _id: string
+  unitNumber: string
+  tenantId?: string
 }
 
 export const UsersListScreen = ({ navigation }: Props) => {
   const [activeTab, setActiveTab] = useState<'TENANT' | 'VENDOR'>('TENANT')
   const [users, setUsers] = useState<UserItem[]>([])
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
+  const { showAlert, showToast } = useAppAlert()
 
-  const loadUsers = async () => {
-    const response = await api.get<UserItem[]>(`/users?role=${activeTab}`)
-    setUsers(response.data)
+  const loadUsers = useCallback(async () => {
+    try {
+      const [usersResponse, unitsResponse] = await Promise.all([
+        api.get<UserItem[]>(`/users?role=${activeTab}`),
+        api.get<UnitItem[]>('/units')
+      ])
+
+      const unitByTenantId = unitsResponse.data.reduce<Record<string, string>>((accumulator, unit) => {
+        if (unit.tenantId) {
+          accumulator[unit.tenantId] = unit.unitNumber
+        }
+        return accumulator
+      }, {})
+
+      const usersWithUnits = usersResponse.data.map((user) => ({
+        ...user,
+        assignedUnitNumber:
+          user.role === 'TENANT'
+            ? user.assignedUnitNumber || unitByTenantId[user._id] || null
+            : null
+      }))
+
+      setUsers(usersWithUnits)
+    } catch {
+      showToast({
+        type: 'error',
+        message: 'Failed to load users. Please pull to refresh and try again.'
+      })
+    }
+  }, [activeTab, showToast])
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadUsers()
+    }, [loadUsers])
+  )
+
+  const deleteUser = async (user: UserItem) => {
+    setDeletingUserId(user._id)
+    try {
+      await api.delete(`/users/${user._id}`)
+      setUsers((previous) => previous.filter((item) => item._id !== user._id))
+      showToast({
+        type: 'success',
+        message: `${user.role === 'TENANT' ? 'Tenant' : 'Vendor'} deleted successfully.`
+      })
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      showToast({
+        type: 'error',
+        message: message || 'Unable to delete this user right now.'
+      })
+    } finally {
+      setDeletingUserId(null)
+    }
   }
 
-  useEffect(() => {
-    loadUsers()
-  }, [activeTab])
+  const confirmDelete = (user: UserItem) => {
+    showAlert({
+      title: `Delete ${user.role === 'TENANT' ? 'tenant' : 'vendor'}?`,
+      message:
+        user.role === 'TENANT'
+          ? 'This will remove the tenant from the assigned unit and permanently delete the tenant user and related records.'
+          : 'This will permanently delete the vendor user and related records.',
+      actions: [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void deleteUser(user)
+          }
+        }
+      ]
+    })
+  }
 
   return (
     <ScreenContainer onRefresh={loadUsers}>
@@ -52,14 +132,36 @@ export const UsersListScreen = ({ navigation }: Props) => {
             }
           }}
         >
-          <Text style={styles.name}>{user.name}</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.name}>{user.name}</Text>
+            <Pressable
+              style={styles.deleteButton}
+              onPress={(event) => {
+                event.stopPropagation()
+                confirmDelete(user)
+              }}
+              disabled={deletingUserId === user._id}
+            >
+              {deletingUserId === user._id ? (
+                <Text style={styles.deleteIcon}>…</Text>
+              ) : (
+                <Ionicons name='trash-outline' size={18} color={colors.danger} />
+              )}
+            </Pressable>
+          </View>
           <Text style={styles.meta}>{user.email}</Text>
-          <Text style={styles.meta}>{user.role}</Text>
+          <Text style={styles.meta}>
+            {user.role === 'TENANT'
+              ? `Unit: ${user.assignedUnitNumber || 'Unassigned'}`
+              : 'Vendor'}
+          </Text>
         </Pressable>
       ))}
 
       <Pressable style={styles.inviteBtn} onPress={() => navigation.navigate(ROUTES.INVITE_USER)}>
-        <Text style={styles.inviteBtnText}>Invite User</Text>
+        <Text style={styles.inviteBtnText}>
+          {activeTab === 'TENANT' ? 'Add Tenant' : 'Invite Vendor'}
+        </Text>
       </Pressable>
     </ScreenContainer>
   )
@@ -103,9 +205,29 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.xs
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm
+  },
   name: {
+    flex: 1,
     fontSize: typography.bodyL,
     color: colors.textPrimary,
+    fontFamily: 'Inter_600SemiBold'
+  },
+  deleteButton: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface
+  },
+  deleteIcon: {
+    fontSize: 16,
+    color: colors.danger,
     fontFamily: 'Inter_600SemiBold'
   },
   meta: {
