@@ -25,7 +25,7 @@ const settingsItems: SettingsItem[] = [
 ]
 
 export const SettingsScreen = () => {
-  const navigation = useNavigation<LandlordSettingsStackScreenProps<'Settings'>['navigation']>()
+  const navigation = useNavigation<LandlordSettingsStackScreenProps<'SettingsHome'>['navigation']>()
   const dispatch = useAppDispatch()
   const { showAlert, showToast } = useAppAlert()
 
@@ -52,6 +52,11 @@ export const SettingsScreen = () => {
   const handleItemPress = (item: SettingsItem) => {
     if (item.key === 'Logout') {
       confirmLogout()
+      return
+    }
+
+    if (item.key === 'Profile') {
+      navigation.navigate(ROUTES.LANDLORD_PROFILE)
       return
     }
 

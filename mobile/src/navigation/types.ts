@@ -99,8 +99,10 @@ export type LandlordUsersStackScreenProps<T extends keyof LandlordUsersStackPara
   NativeStackScreenProps<LandlordUsersStackParamList, T>
 
 export type LandlordSettingsStackParamList = {
-  Settings: undefined
+  SettingsHome: undefined
   ChangePassword: undefined
+  LandlordProfile: undefined
+  EditLandlordProfile: undefined
 }
 
 export type LandlordSettingsStackScreenProps<T extends keyof LandlordSettingsStackParamList> =

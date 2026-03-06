@@ -25,6 +25,8 @@ import { InviteUserScreen } from '../screens/landlord/InviteUserScreen'
 import { VendorDetailsScreen } from '../screens/landlord/VendorDetailsScreen'
 import { SettingsScreen } from '../screens/landlord/SettingsScreen'
 import { ChangePasswordScreen } from '../screens/landlord/ChangePasswordScreen'
+import { LandlordProfileScreen } from '../screens/landlord/LandlordProfileScreen'
+import { EditLandlordProfileScreen } from '../screens/landlord/EditLandlordProfileScreen'
 import { ROUTES } from './routes'
 
 const Tab = createBottomTabNavigator<LandlordTabParamList>()
@@ -68,7 +70,9 @@ const UsersNavigator = () => {
 const SettingsNavigator = () => {
   return (
     <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
-      <SettingsStack.Screen name={ROUTES.SETTINGS} component={SettingsScreen} options={{ title: 'Settings' }} />
+      <SettingsStack.Screen name={ROUTES.SETTINGS_HOME} component={SettingsScreen} options={{ title: 'Settings' }} />
+      <SettingsStack.Screen name={ROUTES.LANDLORD_PROFILE} component={LandlordProfileScreen} options={{ title: 'Profile' }} />
+      <SettingsStack.Screen name={ROUTES.EDIT_LANDLORD_PROFILE} component={EditLandlordProfileScreen} options={{ title: 'Edit Profile' }} />
       <SettingsStack.Screen name={ROUTES.CHANGE_PASSWORD} component={ChangePasswordScreen} options={{ title: 'Change Password' }} />
     </SettingsStack.Navigator>
   )

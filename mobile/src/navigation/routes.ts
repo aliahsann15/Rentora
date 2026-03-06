@@ -28,7 +28,10 @@ export const ROUTES = {
   INVITE_USER: 'InviteUser',
   VENDOR_DETAILS: 'VendorDetails',
   SETTINGS: 'Settings',
+  SETTINGS_HOME: 'SettingsHome',
   CHANGE_PASSWORD: 'ChangePassword',
+  LANDLORD_PROFILE: 'LandlordProfile',
+  EDIT_LANDLORD_PROFILE: 'EditLandlordProfile',
 
   MY_REQUESTS: 'MyRequests',
   MY_REQUESTS_LIST: 'MyRequestsList',

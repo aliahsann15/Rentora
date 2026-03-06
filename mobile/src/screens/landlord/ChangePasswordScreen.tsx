@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { ScreenContainer } from '../../components/ScreenContainer'
+import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { useAppAlert } from '../../hooks/useAppAlert'
 import { LandlordSettingsStackScreenProps } from '../../navigation/types'
 import { api } from '../../services/api'
@@ -44,7 +45,7 @@ export const ChangePasswordScreen = ({ navigation }: Props) => {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Change Password</Text>
+      <SubScreenHeader title='Change Password' />
 
       <View style={styles.formCard}>
         <View style={styles.inputRow}>
@@ -92,11 +93,6 @@ export const ChangePasswordScreen = ({ navigation }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: typography.headingL,
-    color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
-  },
   formCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

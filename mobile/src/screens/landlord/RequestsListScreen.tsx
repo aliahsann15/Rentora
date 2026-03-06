@@ -26,6 +26,7 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
   const [urgency, setUrgency] = useState<string>(route.params?.urgency || 'ALL')
   const [propertyId, setPropertyId] = useState<string>(route.params?.propertyId || 'ALL')
   const [propertySearch, setPropertySearch] = useState('')
+  const [isPropertyHintsOpen, setIsPropertyHintsOpen] = useState(false)
   const [isStatusOpen, setIsStatusOpen] = useState(false)
   const [isUrgencyOpen, setIsUrgencyOpen] = useState(false)
 
@@ -68,6 +69,12 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
   const propertyNameMap = useMemo(() => {
     return Object.fromEntries(properties.map((property) => [property._id, property.name]))
   }, [properties])
+
+  const applyPropertySelection = (item: PropertyItem) => {
+    setPropertyId(item._id)
+    setPropertySearch(item.name)
+    setIsPropertyHintsOpen(false)
+  }
 
   return (
     <ScreenContainer onRefresh={loadRequestsAndProperties}>
@@ -140,24 +147,53 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
         <TextInput
           placeholder='Search property'
           value={propertySearch}
-          onChangeText={setPropertySearch}
+          onChangeText={(value) => {
+            setPropertySearch(value)
+            setIsPropertyHintsOpen(true)
+          }}
+          onFocus={() => {
+            setIsPropertyHintsOpen(true)
+            setIsStatusOpen(false)
+            setIsUrgencyOpen(false)
+          }}
+          onBlur={() => {
+            setTimeout(() => {
+              setIsPropertyHintsOpen(false)
+            }, 120)
+          }}
           style={styles.input}
           placeholderTextColor={colors.textMuted}
         />
-        <View style={styles.filterRow}>
-          <Pressable style={[styles.chip, propertyId === 'ALL' && styles.chipActive]} onPress={() => setPropertyId('ALL')}>
-            <Text style={[styles.chipText, propertyId === 'ALL' && styles.chipTextActive]}>ALL</Text>
-          </Pressable>
-          {filteredProperties.slice(0, 4).map((item) => (
+        {isPropertyHintsOpen ? (
+          <View style={styles.propertyHintsList}>
             <Pressable
-              key={item._id}
-              style={[styles.chip, propertyId === item._id && styles.chipActive]}
-              onPress={() => setPropertyId(item._id)}
+              style={[styles.dropdownItem, propertyId === 'ALL' && styles.dropdownItemActive]}
+              onPress={() => {
+                setPropertyId('ALL')
+                setPropertySearch('')
+                setIsPropertyHintsOpen(false)
+              }}
             >
-              <Text style={[styles.chipText, propertyId === item._id && styles.chipTextActive]}>{item.name}</Text>
+              <Text style={[styles.dropdownItemText, propertyId === 'ALL' && styles.dropdownItemTextActive]}>All properties</Text>
             </Pressable>
-          ))}
-        </View>
+
+            {filteredProperties.length === 0 ? (
+              <View style={styles.dropdownItem}>
+                <Text style={styles.dropdownItemText}>No properties found</Text>
+              </View>
+            ) : (
+              filteredProperties.slice(0, 8).map((item) => (
+                <Pressable
+                  key={item._id}
+                  style={[styles.dropdownItem, propertyId === item._id && styles.dropdownItemActive]}
+                  onPress={() => applyPropertySelection(item)}
+                >
+                  <Text style={[styles.dropdownItemText, propertyId === item._id && styles.dropdownItemTextActive]}>{item.name}</Text>
+                </Pressable>
+              ))
+            )}
+          </View>
+        ) : null}
       </View>
 
       {filteredRequests.map((request) => (
@@ -183,7 +219,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold'
   },
   filterBlock: {
-    gap: spacing.sm
+    gap: spacing.sm,
+    position: 'relative'
   },
   dropdownRow: {
     flexDirection: 'row',
@@ -248,31 +285,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontFamily: 'Inter_600SemiBold'
   },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm
-  },
-  chip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface
-  },
-  chipActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft
-  },
-  chipText: {
-    fontSize: typography.caption,
-    color: colors.textSecondary,
-    fontFamily: 'Inter_500Medium'
-  },
-  chipTextActive: {
-    color: colors.primary
-  },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -280,7 +292,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 44,
     color: colors.textPrimary,
-    fontFamily: 'Inter_400Regular'
+    fontFamily: 'Inter_400Regular',
+    backgroundColor: colors.surface
+  },
+  propertyHintsList: {
+    position: 'absolute',
+    top: 78,
+    left: 0,
+    right: 0,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+    zIndex: 35,
+    elevation: 10
   },
   card: {
     backgroundColor: colors.surface,

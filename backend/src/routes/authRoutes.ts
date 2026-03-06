@@ -3,12 +3,14 @@ import {
   changePassword,
   forgotPassword,
   getMe,
+  getMyProfile,
   getMyTenantAssignment,
   login,
   logout,
   refresh,
   resetPassword,
-  register
+  register,
+  updateMyProfile
 } from '../controllers/authController'
 import { authenticateJWT } from '../middlewares/authenticateJWT'
 
@@ -22,6 +24,8 @@ router.post('/forgot-password', forgotPassword)
 router.post('/reset-password', resetPassword)
 router.post('/change-password', authenticateJWT, changePassword)
 router.get('/me', getMe)
+router.get('/profile', authenticateJWT, getMyProfile)
+router.patch('/profile', authenticateJWT, updateMyProfile)
 router.get('/me-assignment', getMyTenantAssignment)
 
 export { router as authRoutes }

@@ -30,7 +30,8 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    marginTop: spacing.xs-3
   },
   title: {
     fontSize: typography.headingL,

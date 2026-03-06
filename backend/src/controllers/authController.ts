@@ -323,6 +323,104 @@ export const getMe = async (req: Request, res: Response): Promise<Response> => {
   }
 }
 
+export const getMyProfile = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const userId = req.user?.userId
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const user = await User.findById(userId).select('_id name email role organizationId avatar isActive')
+    if (!user || !user.isActive) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    let company: string | undefined
+    let companyAddress: string | undefined
+
+    if (user.organizationId) {
+      const organization = await Organization.findById(user.organizationId).select('name companyAddress')
+      company = organization?.name
+      companyAddress = organization?.companyAddress as string | undefined
+    }
+
+    return res.status(200).json({
+      profile: {
+        fullName: user.name,
+        email: user.email,
+        company,
+        companyAddress,
+        profileImage: user.avatar || undefined
+      }
+    })
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to fetch profile', error })
+  }
+}
+
+export const updateMyProfile = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const userId = req.user?.userId
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const { fullName, email, company, companyAddress, profileImage } = req.body as {
+      fullName?: string
+      email?: string
+      company?: string
+      companyAddress?: string
+      profileImage?: string
+    }
+
+    const user = await User.findById(userId)
+    if (!user || !user.isActive) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    if (typeof fullName === 'string' && fullName.trim()) {
+      user.name = fullName.trim()
+    }
+
+    if (typeof email === 'string' && email.trim()) {
+      const normalizedEmail = email.trim().toLowerCase()
+      const existingUser = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } }).select('_id')
+
+      if (existingUser) {
+        return res.status(409).json({ message: 'Email is already in use' })
+      }
+
+      user.email = normalizedEmail
+    }
+
+    if (typeof profileImage === 'string') {
+      user.avatar = profileImage.trim()
+    }
+
+    await user.save()
+
+    if (user.organizationId && (typeof company === 'string' || typeof companyAddress === 'string')) {
+      const organizationUpdates: { name?: string; companyAddress?: string } = {}
+
+      if (typeof company === 'string' && company.trim()) {
+        organizationUpdates.name = company.trim()
+      }
+
+      if (typeof companyAddress === 'string') {
+        organizationUpdates.companyAddress = companyAddress.trim()
+      }
+
+      if (Object.keys(organizationUpdates).length > 0) {
+        await Organization.findByIdAndUpdate(user.organizationId, organizationUpdates)
+      }
+    }
+
+    return res.status(200).json({ message: 'Profile updated successfully' })
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to update profile', error })
+  }
+}
+
 export const getMyTenantAssignment = async (req: Request, res: Response): Promise<Response> => {
   try {
     const token = getBearerToken(req)

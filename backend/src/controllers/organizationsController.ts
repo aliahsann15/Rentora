@@ -33,6 +33,7 @@ export const updateOrganization = async (req: Request, res: Response): Promise<R
 
     const allowedFields = [
       'name',
+      'companyAddress',
       'stripeCustomerId',
       'stripeSubscriptionId',
       'subscriptionStatus',
