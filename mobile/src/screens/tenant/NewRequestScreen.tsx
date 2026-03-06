@@ -17,7 +17,7 @@ interface AssignedUnitItem {
 
 export const NewRequestScreen = () => {
   const dispatch = useAppDispatch()
-  const { creating, error } = useAppSelector((state) => state.requests)
+  const { creating, error } = useAppSelector((state) => state.request)
   const currentUser = useAppSelector((state) => state.auth.user)
   const { showToast } = useAppAlert()
 

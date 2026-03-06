@@ -9,11 +9,16 @@ import { errorHandler } from './middlewares/errorHandler'
 import { webhooksRoutes } from './routes/webhooksRoutes'
 
 const app: Application = express()
+const isProduction = process.env.NODE_ENV === 'production'
+
+app.disable('x-powered-by')
+app.set('trust proxy', Number(process.env.TRUST_PROXY || 1))
 
 const allowedOrigins = (process.env.CORS_WHITELIST || 'http://localhost:8081,http://localhost:3000')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean)
+const allowedOriginsSet = new Set(allowedOrigins)
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
@@ -22,7 +27,7 @@ const corsOptions: cors.CorsOptions = {
       return
     }
 
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOriginsSet.has(origin)) {
       callback(null, true)
       return
     }
@@ -72,10 +77,11 @@ app.use('/api/webhooks', webhooksRoutes)
 app.use(cors(corsOptions))
 app.use(helmet())
 app.use(globalRateLimiter)
-app.use(express.json())
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }))
+app.use(express.urlencoded({ extended: true, limit: process.env.URL_ENCODED_LIMIT || '1mb' }))
 app.use(mongoSanitizeMiddleware)
 app.use(cookieParser())
-app.use(morgan('dev'))
+app.use(morgan(isProduction ? 'combined' : 'dev'))
 app.use('/api', apiRouter)
 
 app.get('/', (req: Request, res: Response) => {

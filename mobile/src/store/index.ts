@@ -45,16 +45,19 @@ const rootReducer = combineReducers({
   unit: unitReducer,
   request: requestReducer,
   vendor: vendorReducer,
-  ui: uiReducer,
-  requests: requestReducer
+  ui: uiReducer
 })
 
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
+      immutableCheck: {
+        warnAfter: 128
+      },
       serializableCheck: {
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER]
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        warnAfter: 128
       }
     })
 })
