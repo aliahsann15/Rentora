@@ -61,13 +61,13 @@ export default function App() {
   })
 
   if (!fontsLoaded) {
-    return <SplashScreen />
+    return null
   }
 
   return (
     <Provider store={store}>
       <StatusBar style='dark' />
-      <PersistGate loading={<SplashScreen />} persistor={persistor}>
+      <PersistGate loading={null} persistor={persistor}>
         <AppAlertProvider>
           <NavigationContainer linking={DeepLinkingConfig} fallback={null}>
             <BootstrapGate />
