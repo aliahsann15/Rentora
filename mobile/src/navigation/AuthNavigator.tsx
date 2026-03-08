@@ -7,6 +7,7 @@ import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen'
 import { InviteRegistrationScreen } from '../screens/auth/InviteRegistrationScreen'
 import { AuthStackParamList } from './types'
 import { ROUTES } from './routes'
+import { colors } from '../utils/theme'
 
 const Stack = createNativeStackNavigator<AuthStackParamList>()
 
@@ -20,7 +21,7 @@ export const AuthNavigator = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#1E3A8A' }
+        contentStyle: { backgroundColor: colors.background }
       }}
     >
       <Stack.Screen name={ROUTES.LOGIN} component={LoginScreen} />

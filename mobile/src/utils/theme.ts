@@ -13,6 +13,7 @@ export const colors = {
   dangerSoft: '#FEF2F2',
 
   background: '#F8FAFC',
+  backgroundDark: '#1F2024',
   surface: '#FFFFFF',
 
   textPrimary: '#0F172A',

@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { useAppDispatch } from '../../hooks/useAppDispatch'
@@ -25,54 +26,85 @@ export const ForgotPasswordScreen = (_props: Props) => {
   }
 
   return (
-    <ScreenContainer>
-      <View style={styles.formCard}>
-        <Text style={styles.title}>Forgot Password</Text>
-        <Text style={styles.subtitle}>Enter your email to reset your password</Text>
+    <ScreenContainer scrollable={false} style={styles.screen}>
+      <View style={styles.shell}>
+        <View style={styles.brandRow}>
+          <Image source={require('../../../assets/logo.png')} style={styles.logoIcon} resizeMode='contain' />
+        </View>
 
-        <TextInput
-          value={email}
-          onChangeText={(value) => {
-            setEmail(value)
-            dispatch(clearAuthError())
-            dispatch(clearAuthInfoMessage())
-          }}
-          placeholder='Email'
-          placeholderTextColor={colors.textMuted}
-          autoCapitalize='none'
-          keyboardType='email-address'
-          style={styles.input}
-        />
+        <View style={styles.centerContent}>
+          <View style={styles.formBlock}>
+            <Text style={styles.title}>Forgot Password</Text>
+            <Text style={styles.subtitle}>Enter your email to reset your password</Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {infoMessage ? <Text style={styles.info}>{infoMessage}</Text> : null}
+          <TextInput
+            value={email}
+            onChangeText={(value) => {
+              setEmail(value)
+              dispatch(clearAuthError())
+              dispatch(clearAuthInfoMessage())
+            }}
+            placeholder='Email'
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize='none'
+            keyboardType='email-address'
+            style={styles.input}
+          />
 
-        <AppButton title='Send Reset Link' onPress={onSubmit} loading={loading} />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {infoMessage ? <Text style={styles.info}>{infoMessage}</Text> : null}
+
+            <AppButton title='Send Reset Link' onPress={onSubmit} loading={loading} style={styles.actionButton} />
+          </View>
+        </View>
       </View>
     </ScreenContainer>
   )
 }
 
 const styles = StyleSheet.create({
-  formCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.md,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2
+  screen: {
+    backgroundColor: colors.background,
+    padding: spacing.sm
+  },
+  shell: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    justifyContent: 'flex-start',
+    gap: spacing.md
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center'
+  },
+  brandRow: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: -spacing.xxl
+  },
+  logoIcon: {
+    width: 148,
+    height: 44,
+    marginBottom: -spacing.xxl
+  },
+  formBlock: {
+    gap: spacing.md
   },
   title: {
-    fontSize: typography.headingM,
+    fontSize: typography.headingL,
     color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
+    fontFamily: 'Inter_700Bold',
+    textAlign: 'center'
   },
   subtitle: {
     fontSize: typography.bodyM,
     color: colors.textSecondary,
-    fontFamily: 'Inter_400Regular'
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center'
   },
   input: {
     borderWidth: 1,
@@ -83,7 +115,7 @@ const styles = StyleSheet.create({
     fontSize: typography.bodyM,
     color: colors.textPrimary,
     fontFamily: 'Inter_400Regular',
-    backgroundColor: colors.surface
+    backgroundColor: colors.background
   },
   error: {
     color: colors.danger,
@@ -94,5 +126,9 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontSize: typography.caption,
     fontFamily: 'Inter_500Medium'
+  },
+  actionButton: {
+    height: 56,
+    borderRadius: radius.md
   }
 })

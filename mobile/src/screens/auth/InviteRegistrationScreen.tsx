@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { useAppDispatch } from '../../hooks/useAppDispatch'
@@ -51,87 +51,116 @@ export const InviteRegistrationScreen = ({ route }: Props) => {
   }
 
   return (
-    <ScreenContainer>
-      <View style={styles.formCard}>
-        <Text style={styles.title}>Invite Registration</Text>
-        <Text style={styles.subtitle}>Complete your tenant/vendor account setup</Text>
-
-        <View style={styles.metaCard}>
-          <Text style={styles.metaLabel}>Email</Text>
-          <Text style={styles.metaValue}>{inviteMeta?.email || 'Validating...'}</Text>
-          <Text style={styles.metaLabel}>Role</Text>
-          <Text style={styles.metaValue}>{inviteMeta?.role || 'Validating...'}</Text>
+    <ScreenContainer scrollable={false} style={styles.screen}>
+      <View style={styles.shell}>
+        <View style={styles.brandRow}>
+          <Image source={require('../../../assets/logo.png')} style={styles.logoIcon} resizeMode='contain' />
         </View>
 
-        <TextInput
-          value={name}
-          onChangeText={(value) => {
-            setName(value)
-            dispatch(clearAuthError())
-          }}
-          placeholder='Name'
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-        />
+        <View style={styles.centerContent}>
+          <View style={styles.formBlock}>
+            <Text style={styles.title}>Invite Registration</Text>
+            <Text style={styles.subtitle}>Complete your tenant/vendor account setup</Text>
 
-        <View style={styles.inputRow}>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>Email</Text>
+            <Text style={styles.metaValue}>{inviteMeta?.email || 'Validating...'}</Text>
+            <Text style={styles.metaLabel}>Role</Text>
+            <Text style={styles.metaValue}>{inviteMeta?.role || 'Validating...'}</Text>
+          </View>
+
           <TextInput
-            value={password}
+            value={name}
             onChangeText={(value) => {
-              setPassword(value)
+              setName(value)
               dispatch(clearAuthError())
             }}
-            placeholder='Password'
+            placeholder='Name'
             placeholderTextColor={colors.textMuted}
-            secureTextEntry={!showPassword}
-            style={styles.passwordInput}
+            style={styles.input}
           />
-          <Pressable
-            accessibilityRole='button'
-            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-            onPress={() => setShowPassword((prev) => !prev)}
-            hitSlop={8}
-          >
-            <Ionicons
-              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={20}
-              color={colors.textMuted}
+
+          <View style={styles.inputRow}>
+            <TextInput
+              value={password}
+              onChangeText={(value) => {
+                setPassword(value)
+                dispatch(clearAuthError())
+              }}
+              placeholder='Password'
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry={!showPassword}
+              style={styles.passwordInput}
             />
-          </Pressable>
+            <Pressable
+              accessibilityRole='button'
+              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              onPress={() => setShowPassword((prev) => !prev)}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color={colors.textMuted}
+              />
+            </Pressable>
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <AppButton title='Complete Registration' onPress={onSubmit} loading={loading} style={styles.actionButton} />
+          </View>
         </View>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <AppButton title='Complete Registration' onPress={onSubmit} loading={loading} />
       </View>
     </ScreenContainer>
   )
 }
 
 const styles = StyleSheet.create({
-  formCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.md,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2
+  screen: {
+    backgroundColor: colors.background,
+    padding: spacing.sm
+  },
+  shell: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    justifyContent: 'flex-start',
+    gap: spacing.md
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center'
+  },
+  brandRow: {
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  logoIcon: {
+    width: 148,
+    height: 44
+  },
+  formBlock: {
+    gap: spacing.md
   },
   title: {
-    fontSize: typography.headingM,
+    fontSize: typography.headingL,
     color: colors.textPrimary,
-    fontFamily: 'Inter_700Bold'
+    fontFamily: 'Inter_700Bold',
+    textAlign: 'center'
   },
   subtitle: {
     fontSize: typography.bodyM,
     color: colors.textSecondary,
-    fontFamily: 'Inter_400Regular'
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center'
   },
   metaCard: {
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.sm,
     gap: spacing.xs
@@ -155,17 +184,18 @@ const styles = StyleSheet.create({
     fontSize: typography.bodyM,
     color: colors.textPrimary,
     fontFamily: 'Inter_400Regular',
-    backgroundColor: colors.surface
+    backgroundColor: colors.background
   },
   inputRow: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     height: 48,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm
   },
   passwordInput: {
     flex: 1,
@@ -177,5 +207,9 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: typography.caption,
     fontFamily: 'Inter_500Medium'
+  },
+  actionButton: {
+    height: 56,
+    borderRadius: radius.md
   }
 })

@@ -36,7 +36,7 @@ export const AppButton = ({
       disabled={isDisabled}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'secondary' ? colors.primary : colors.surface} />
+        <ActivityIndicator color={colors.surface} />
       ) : (
         <Text
           style={[
@@ -62,9 +62,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary
   },
   secondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.primary
+    backgroundColor: colors.backgroundDark
   },
   danger: {
     backgroundColor: colors.danger
@@ -80,6 +78,6 @@ const styles = StyleSheet.create({
     color: colors.surface
   },
   secondaryLabel: {
-    color: colors.primary
+    color: colors.surface
   }
 })

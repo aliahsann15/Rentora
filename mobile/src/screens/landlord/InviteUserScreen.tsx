@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft
   },
   dropdownItemDisabled: {
-    backgroundColor: colors.divider
+    backgroundColor: colors.backgroundDark
   },
   dropdownItemText: {
     color: colors.textSecondary,
@@ -321,6 +321,6 @@ const styles = StyleSheet.create({
     color: colors.primary
   },
   dropdownItemTextDisabled: {
-    color: colors.textMuted
+    color: colors.surface
   }
 })
