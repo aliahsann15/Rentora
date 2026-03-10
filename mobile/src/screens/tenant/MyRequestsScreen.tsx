@@ -2,8 +2,10 @@ import { useCallback, useState } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
+import { Modal } from '../../components/common/Modal'
 import { TenantRequestsStackParamList } from '../../navigation/types'
 import { ROUTES } from '../../navigation/routes'
 import { api, RequestItem } from '../../services/api'
@@ -23,6 +25,8 @@ interface TenantAssignmentLookup {
 export const MyRequestsScreen = ({ navigation }: Props) => {
   const { showToast } = useAppAlert()
   const [requests, setRequests] = useState<RequestItem[]>([])
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null)
 
   const loadRequests = async () => {
     try {
@@ -75,6 +79,36 @@ export const MyRequestsScreen = ({ navigation }: Props) => {
     }, [])
   )
 
+  const promptDelete = (requestId: string) => {
+    setSelectedRequestId(requestId)
+    setIsDeleteOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!selectedRequestId) {
+      setIsDeleteOpen(false)
+      return
+    }
+
+    try {
+      await api.delete(`/requests/${selectedRequestId}`)
+      setRequests((current) => current.filter((item) => item._id !== selectedRequestId))
+    } catch (error: unknown) {
+      const responseMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      const statusCode = (error as { response?: { status?: number } })?.response?.status
+      const fallbackMessage = (error as { message?: string })?.message
+      const statusPrefix = statusCode ? `(${statusCode}) ` : ''
+
+      showToast({
+        type: 'error',
+        message: `${statusPrefix}${responseMessage || fallbackMessage || 'Unable to delete request. Please try again.'}`
+      })
+    } finally {
+      setIsDeleteOpen(false)
+      setSelectedRequestId(null)
+    }
+  }
+
   return (
     <ScreenContainer onRefresh={loadRequests}>
       <Text style={styles.title}>My Requests</Text>
@@ -87,12 +121,37 @@ export const MyRequestsScreen = ({ navigation }: Props) => {
         >
           <View style={styles.cardRow}>
             <Text style={styles.cardTitle}>{request.title}</Text>
-            <StatusBadge status={request.status} />
+            <View style={styles.cardActions}>
+              <StatusBadge status={request.status} />
+              {request.status === 'NEW' ? (
+                <Pressable
+                  style={styles.deleteButton}
+                  onPress={(event) => {
+                    event.stopPropagation?.()
+                    promptDelete(request._id)
+                  }}
+                >
+                  <Ionicons name='trash-outline' size={18} color={colors.danger} />
+                </Pressable>
+              ) : null}
+            </View>
           </View>
           <Text style={styles.meta}>Date: {new Date(request.createdAt).toLocaleDateString()}</Text>
           <Text style={styles.meta}>Property: {request.propertyName || '—'}</Text>
         </Pressable>
       ))}
+
+      <Modal
+        visible={isDeleteOpen}
+        title='Delete request?'
+        message='This action cannot be undone.'
+        confirmText='Delete'
+        onClose={() => {
+          setIsDeleteOpen(false)
+          setSelectedRequestId(null)
+        }}
+        onConfirm={handleDelete}
+      />
     </ScreenContainer>
   )
 }
@@ -112,6 +171,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 10,
     elevation: 2
+  },
+  cardActions: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs
+  },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    marginRight: -spacing.md,
   },
   cardRow: {
     flexDirection: 'row',

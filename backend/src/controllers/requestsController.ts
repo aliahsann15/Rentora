@@ -9,6 +9,7 @@ import {
   updateStatusWithRules
 } from '../services/requestStatusService'
 import { createNotificationsAndPush } from '../services/pushNotificationService'
+import { broadcastNotificationUpdate } from '../services/notificationsGateway'
 
 const readCurrentUser = (req: Request) => {
   if (!req.user) {
@@ -310,6 +311,18 @@ export const deleteRequest = async (req: Request, res: Response): Promise<Respon
     const currentUser = readCurrentUser(req)
     const requestId = readRequestId(req)
     const request = await deleteRequestWithRules(requestId, currentUser)
+
+    const landlords = await getLandlordRecipientIds(currentUser.organizationId)
+    const recipientIds = Array.from(
+      new Set([request.tenantId?.toString(), ...landlords].filter(Boolean) as string[])
+    )
+
+    broadcastNotificationUpdate({
+      userIds: recipientIds,
+      organizationId: currentUser.organizationId,
+      type: 'REQUEST_DELETED',
+      referenceId: request._id.toString()
+    })
 
     return res.status(200).json({ message: 'Request deleted', requestId: request._id.toString() })
   } catch (error) {
