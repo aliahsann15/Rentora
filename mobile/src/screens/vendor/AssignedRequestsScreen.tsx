@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ScreenContainer } from '../../components/ScreenContainer'
@@ -6,6 +7,8 @@ import { StatusBadge } from '../../components/StatusBadge'
 import { VendorRequestsStackParamList } from '../../navigation/types'
 import { ROUTES } from '../../navigation/routes'
 import { api, RequestItem } from '../../services/api'
+import { useAppAlert } from '../../hooks/useAppAlert'
+import { subscribeNotifications } from '../../services/notificationsPoller'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
 type Props = NativeStackScreenProps<VendorRequestsStackParamList, 'AssignedRequestsList'>
@@ -19,6 +22,7 @@ const requestFilterStatusMap: Record<RequestFilter, 'ASSIGNED' | 'IN_PROGRESS' |
 }
 
 export const AssignedRequestsScreen = ({ navigation }: Props) => {
+  const { showToast } = useAppAlert()
   const [activeFilter, setActiveFilter] = useState<RequestFilter>('NEW')
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -31,16 +35,36 @@ export const AssignedRequestsScreen = ({ navigation }: Props) => {
         params: { status }
       })
       setRequests(response.data)
-    } catch {
+    } catch (error: unknown) {
       setRequests([])
+
+      const responseMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      const statusCode = (error as { response?: { status?: number } })?.response?.status
+      const fallbackMessage = (error as { message?: string })?.message
+      const statusPrefix = statusCode ? `(${statusCode}) ` : ''
+
+      showToast({
+        type: 'error',
+        message: `${statusPrefix}${responseMessage || fallbackMessage || 'Unable to load assigned requests. Please try again.'}`
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    void loadRequests()
-  }, [activeFilter])
+  useFocusEffect(
+    useCallback(() => {
+      void loadRequests()
+
+      const unsubscribe = subscribeNotifications(() => {
+        void loadRequests()
+      })
+
+      return () => {
+        unsubscribe()
+      }
+    }, [activeFilter])
+  )
 
   return (
     <ScreenContainer onRefresh={loadRequests}>

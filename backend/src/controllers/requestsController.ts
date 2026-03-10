@@ -4,6 +4,7 @@ import {
   addRequestImagesWithRules,
   assignVendorWithRules,
   createRequestWithRules,
+  deleteRequestWithRules,
   getScopedRequestFilter,
   updateStatusWithRules
 } from '../services/requestStatusService'
@@ -65,6 +66,17 @@ const serializeRequest = (request: Record<string, unknown>) => {
     propertyName: propertyName || undefined,
     unitNumber: unitNumber || undefined
   }
+}
+
+const getLandlordRecipientIds = async (organizationId: string): Promise<string[]> => {
+  const landlords = await User.find({
+    organizationId,
+    role: 'LANDLORD',
+    // Legacy records may not have this field; treat missing as active.
+    isActive: { $ne: false }
+  }).select('_id')
+
+  return landlords.map((landlord) => landlord._id.toString())
 }
 
 export const getRequests = async (req: Request, res: Response): Promise<Response> => {
@@ -138,23 +150,29 @@ export const createRequest = async (req: Request, res: Response): Promise<Respon
       urgency: urgency || 'MEDIUM'
     }, currentUser)
 
-    const landlords = await User.find({
-      organizationId: currentUser.organizationId,
-      role: 'LANDLORD',
-      isActive: true
-    }).select('_id')
+    if (currentUser.role === 'TENANT') {
+      const landlordRecipientIds = await getLandlordRecipientIds(currentUser.organizationId)
 
-    try {
-      await createNotificationsAndPush({
-        userIds: landlords.map((landlord) => landlord._id.toString()),
-        organizationId: currentUser.organizationId,
-        title: 'New request',
-        body: request.title,
-        type: 'REQUEST_NEW',
-        referenceId: request._id.toString(),
-        data: { requestId: request._id.toString() }
-      })
-    } catch {}
+      if (landlordRecipientIds.length > 0) {
+        try {
+          await createNotificationsAndPush({
+            userIds: landlordRecipientIds,
+            organizationId: currentUser.organizationId,
+            title: 'New request',
+            body: request.title,
+            type: 'REQUEST_NEW',
+            referenceId: request._id.toString(),
+            data: { requestId: request._id.toString() }
+          })
+        } catch (error) {
+          console.error('Failed to notify landlords for new tenant request', {
+            requestId: request._id.toString(),
+            organizationId: currentUser.organizationId,
+            error
+          })
+        }
+      }
+    }
 
     return res.status(201).json(request)
   } catch (error) {
@@ -191,13 +209,9 @@ export const updateRequestStatus = async (req: Request, res: Response): Promise<
     const requestId = readRequestId(req)
     const request = await updateStatusWithRules(requestId, status, currentUser)
 
-    const landlords = await User.find({
-      organizationId: currentUser.organizationId,
-      role: 'LANDLORD',
-      isActive: true
-    }).select('_id')
+    const landlords = await getLandlordRecipientIds(currentUser.organizationId)
 
-    const recipients = [request.tenantId?.toString(), ...landlords.map((landlord) => landlord._id.toString())]
+    const recipients = [request.tenantId?.toString(), ...landlords]
       .filter(Boolean) as string[]
 
     try {
@@ -229,7 +243,11 @@ export const assignRequestVendor = async (req: Request, res: Response): Promise<
     const requestId = readRequestId(req)
     const request = await assignVendorWithRules(requestId, vendorId, currentUser)
 
-    const assignedVendor = await Vendor.findById(vendorId).select('userId')
+    const assignedVendor = await Vendor.findOne({
+      _id: vendorId,
+      organizationId: currentUser.organizationId,
+      isActive: true
+    }).select('userId')
 
     if (assignedVendor?.userId) {
       try {
@@ -242,7 +260,13 @@ export const assignRequestVendor = async (req: Request, res: Response): Promise<
           referenceId: request._id.toString(),
           data: { requestId: request._id.toString() }
         })
-      } catch {}
+      } catch (error) {
+        console.error('Failed to notify assigned vendor', {
+          requestId: request._id.toString(),
+          vendorId,
+          error
+        })
+      }
     }
 
     return res.status(200).json(request)
@@ -278,5 +302,17 @@ export const uploadRequestImages = async (req: Request, res: Response): Promise<
     return res.status(200).json(request)
   } catch (error) {
     return res.status(400).json({ message: 'Failed to upload request images', error })
+  }
+}
+
+export const deleteRequest = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const currentUser = readCurrentUser(req)
+    const requestId = readRequestId(req)
+    const request = await deleteRequestWithRules(requestId, currentUser)
+
+    return res.status(200).json({ message: 'Request deleted', requestId: request._id.toString() })
+  } catch (error) {
+    return res.status(400).json({ message: 'Failed to delete request', error })
   }
 }

@@ -193,3 +193,29 @@ export const addRequestImagesWithRules = async (
   await request.save()
   return request
 }
+
+export const deleteRequestWithRules = async (requestId: string, currentUser: CurrentUser) => {
+  if (currentUser.role !== 'TENANT') {
+    throw new Error('Only tenant can delete request')
+  }
+
+  const request = await MaintenanceRequest.findOne({
+    _id: requestId,
+    organizationId: currentUser.organizationId
+  })
+
+  if (!request) {
+    throw new Error('Request not found')
+  }
+
+  if (request.tenantId.toString() !== currentUser.userId) {
+    throw new Error('Tenant can only delete own request')
+  }
+
+  if (request.vendorId || request.status !== 'NEW') {
+    throw new Error('Request can only be deleted before vendor assignment')
+  }
+
+  await request.deleteOne()
+  return request
+}

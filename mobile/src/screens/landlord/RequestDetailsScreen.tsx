@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
@@ -64,9 +65,11 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
     }
   }
 
-  useEffect(() => {
-    void loadRequest()
-  }, [route.params.requestId])
+  useFocusEffect(
+    useCallback(() => {
+      void loadRequest()
+    }, [route.params.requestId])
+  )
 
   const updateStatus = async (status: 'ASSIGNED' | 'IN_PROGRESS' | 'DONE') => {
     if (!request) {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigation } from '@react-navigation/native'
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { ScreenContainer } from '../../components/ScreenContainer'
@@ -8,6 +9,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch'
 import { useAppSelector } from '../../hooks/useAppSelector'
 import { useAppAlert } from '../../hooks/useAppAlert'
 import { colors, radius, spacing, typography } from '../../utils/theme'
+import { ROUTES } from '../../navigation/routes'
 
 interface AssignedUnitItem {
   unitId: string
@@ -16,6 +18,7 @@ interface AssignedUnitItem {
 }
 
 export const NewRequestScreen = () => {
+  const navigation = useNavigation<any>()
   const dispatch = useAppDispatch()
   const { creating, error } = useAppSelector((state) => state.request)
   const currentUser = useAppSelector((state) => state.auth.user)
@@ -103,7 +106,7 @@ export const NewRequestScreen = () => {
     setImages((previous) => previous.filter((item) => item !== uri))
   }
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (!propertyId || !unitId || !title || !description) {
       showToast({
         type: 'error',
@@ -113,7 +116,8 @@ export const NewRequestScreen = () => {
     }
 
     dispatch(clearRequestError())
-    dispatch(
+
+    const resultAction = await dispatch(
       createMaintenanceRequest({
         propertyId,
         unitId,
@@ -124,9 +128,12 @@ export const NewRequestScreen = () => {
       })
     )
 
-    setTitle('')
-    setDescription('')
-    setImages([])
+    if (createMaintenanceRequest.fulfilled.match(resultAction)) {
+      setTitle('')
+      setDescription('')
+      setImages([])
+      navigation.navigate(ROUTES.MY_REQUESTS)
+    }
   }
 
   return (

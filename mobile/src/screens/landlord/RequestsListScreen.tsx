@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
 import { api, RequestItem } from '../../services/api'
+import { useAppAlert } from '../../hooks/useAppAlert'
+import { subscribeNotifications } from '../../services/notificationsPoller'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 import { LandlordRequestsStackParamList } from '../../navigation/types'
 import { ROUTES } from '../../navigation/routes'
@@ -20,6 +23,7 @@ const statuses = ['ALL', 'NEW', 'ASSIGNED', 'IN_PROGRESS', 'DONE', 'VERIFIED'] a
 const urgencies = ['ALL', 'LOW', 'MEDIUM', 'HIGH'] as const
 
 export const RequestsListScreen = ({ navigation, route }: Props) => {
+  const { showToast } = useAppAlert()
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [properties, setProperties] = useState<PropertyItem[]>([])
   const [status, setStatus] = useState<string>(route.params?.status || 'ALL')
@@ -39,15 +43,35 @@ export const RequestsListScreen = ({ navigation, route }: Props) => {
 
       setRequests(requestRes.data)
       setProperties(propertiesRes.data)
-    } catch {
+    } catch (error: unknown) {
       setRequests([])
       setProperties([])
+
+      const responseMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      const statusCode = (error as { response?: { status?: number } })?.response?.status
+      const fallbackMessage = (error as { message?: string })?.message
+      const statusPrefix = statusCode ? `(${statusCode}) ` : ''
+
+      showToast({
+        type: 'error',
+        message: `${statusPrefix}${responseMessage || fallbackMessage || 'Unable to load requests. Please try again.'}`
+      })
     }
   }
 
-  useEffect(() => {
-    void loadRequestsAndProperties()
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      void loadRequestsAndProperties()
+
+      const unsubscribe = subscribeNotifications(() => {
+        void loadRequestsAndProperties()
+      })
+
+      return () => {
+        unsubscribe()
+      }
+    }, [])
+  )
 
   const filteredProperties = useMemo(() => {
     if (!propertySearch.trim()) {
