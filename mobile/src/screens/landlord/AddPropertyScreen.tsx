@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AppButton } from '../../components/AppButton'
 import { SubScreenHeader } from '../../components/layout/SubScreenHeader'
 import { ScreenContainer } from '../../components/ScreenContainer'
@@ -215,8 +215,19 @@ export const AddPropertyScreen = ({ navigation }: Props) => {
   const [state, setState] = useState('')
   const [zip, setZip] = useState('')
   const [country, setCountry] = useState(countries[0])
+  const [countryQuery, setCountryQuery] = useState(countries[0])
   const [isCountryOpen, setIsCountryOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isCountrySelectingRef = useRef(false)
+
+  const filteredCountries = useMemo(() => {
+    const normalized = countryQuery.trim().toLowerCase()
+    if (!normalized) {
+      return countries
+    }
+
+    return countries.filter((item) => item.toLowerCase().includes(normalized))
+  }, [countryQuery])
 
   const onCreate = async () => {
     if (!name || !line1 || !city || !state || !zip || !country) {
@@ -245,7 +256,7 @@ export const AddPropertyScreen = ({ navigation }: Props) => {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer scrollEnabled={!isCountryOpen} keyboardShouldPersistTaps={isCountryOpen ? 'always' : undefined}>
       <SubScreenHeader title='Add Property' />
       <View style={styles.card}>
         <TextInput value={name} onChangeText={setName} placeholder='Property Name' placeholderTextColor={colors.textMuted} style={styles.input} />
@@ -255,24 +266,59 @@ export const AddPropertyScreen = ({ navigation }: Props) => {
         <TextInput value={zip} onChangeText={setZip} placeholder='Zip Code' placeholderTextColor={colors.textMuted} style={styles.input} />
 
         <View style={styles.dropdownWrap}>
-          <Pressable style={styles.dropdownButton} onPress={() => setIsCountryOpen((current) => !current)}>
-            <Text style={styles.dropdownText}>{country}</Text>
-          </Pressable>
+          <TextInput
+            value={countryQuery}
+            onChangeText={(value) => {
+              setCountryQuery(value)
+              if (!isCountryOpen) {
+                setIsCountryOpen(true)
+              }
+            }}
+            placeholder='Country'
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            onFocus={() => setIsCountryOpen(true)}
+            onBlur={() => {
+              if (isCountrySelectingRef.current) {
+                return
+              }
+              setTimeout(() => {
+                if (!isCountrySelectingRef.current) {
+                  setIsCountryOpen(false)
+                }
+              }, 120)
+            }}
+          />
 
           {isCountryOpen ? (
             <View style={styles.dropdownList}>
-              {countries.map((item) => (
-                <Pressable
-                  key={item}
-                  style={[styles.dropdownItem, item === country && styles.dropdownItemActive]}
-                  onPress={() => {
-                    setCountry(item)
-                    setIsCountryOpen(false)
-                  }}
-                >
-                  <Text style={[styles.dropdownItemText, item === country && styles.dropdownItemTextActive]}>{item}</Text>
-                </Pressable>
-              ))}
+              <ScrollView
+                nestedScrollEnabled
+                keyboardShouldPersistTaps='always'
+                contentContainerStyle={styles.dropdownListContent}
+              >
+                {filteredCountries.length === 0 ? (
+                  <Text style={styles.dropdownEmpty}>No countries found</Text>
+                ) : (
+                  filteredCountries.map((item) => (
+                    <Pressable
+                      key={item}
+                      style={[styles.dropdownItem, item === country && styles.dropdownItemActive]}
+                      onPressIn={() => {
+                        isCountrySelectingRef.current = true
+                        setCountry(item)
+                        setCountryQuery(item)
+                        setIsCountryOpen(false)
+                        setTimeout(() => {
+                          isCountrySelectingRef.current = false
+                        }, 0)
+                      }}
+                    >
+                      <Text style={[styles.dropdownItemText, item === country && styles.dropdownItemTextActive]}>{item}</Text>
+                    </Pressable>
+                  ))
+                )}
+              </ScrollView>
             </View>
           ) : null}
         </View>
@@ -303,26 +349,16 @@ const styles = StyleSheet.create({
   dropdownWrap: {
     gap: spacing.xs
   },
-  dropdownButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    height: 44,
-    justifyContent: 'center',
-    backgroundColor: colors.surface
-  },
-  dropdownText: {
-    color: colors.textPrimary,
-    fontFamily: 'Inter_400Regular',
-    fontSize: typography.bodyM
-  },
   dropdownList: {
+    maxHeight: 220,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     overflow: 'hidden'
+  },
+  dropdownListContent: {
+    paddingVertical: spacing.xs
   },
   dropdownItem: {
     paddingHorizontal: spacing.md,
@@ -339,6 +375,13 @@ const styles = StyleSheet.create({
   dropdownItemTextActive: {
     color: colors.primary,
     fontFamily: 'Inter_500Medium'
+  },
+  dropdownEmpty: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    color: colors.textMuted,
+    fontFamily: 'Inter_400Regular',
+    fontSize: typography.bodyM
   },
   error: {
     color: colors.danger,

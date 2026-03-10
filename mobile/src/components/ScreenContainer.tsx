@@ -6,6 +6,8 @@ import { colors, spacing } from '../utils/theme'
 interface ScreenContainerProps {
   children: ReactNode
   scrollable?: boolean
+  scrollEnabled?: boolean
+  keyboardShouldPersistTaps?: 'always' | 'never' | 'handled'
   style?: ViewStyle
   onRefresh?: () => Promise<void> | void
   refreshEnabled?: boolean
@@ -14,6 +16,8 @@ interface ScreenContainerProps {
 export const ScreenContainer = ({
   children,
   scrollable = true,
+  scrollEnabled = true,
+  keyboardShouldPersistTaps,
   style,
   onRefresh,
   refreshEnabled = true
@@ -42,6 +46,8 @@ export const ScreenContainer = ({
     <RootWrapper style={styles.root}>
       <ScrollView
         contentContainerStyle={[styles.content, style]}
+        scrollEnabled={scrollEnabled}
+        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} enabled={refreshEnabled} />}
       >
         {children}
