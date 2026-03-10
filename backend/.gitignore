@@ -7,3 +7,6 @@ dist/
 .env.development
 .env.test
 .env.production 
+
+# Ignore Firebase service account key file
+/rentora-fcm-service-account.json

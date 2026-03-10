@@ -15,6 +15,10 @@
       "supportsTablet": true
     },
     "android": {
+      "googleServicesFile": "./android/app/google-services.json",
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png"
@@ -27,6 +31,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-notifications",
       [
         "@stripe/stripe-react-native",
         {

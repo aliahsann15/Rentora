@@ -66,6 +66,12 @@ export const registerDeviceToken = async (req: Request, res: Response): Promise<
       User.findByIdAndUpdate(userId, { $addToSet: { pushTokens: token } })
     ])
 
+    console.log('Push token registered', {
+      userId,
+      device: device || 'unknown',
+      tokenLength: token.length
+    })
+
     return res.status(200).json({ message: 'Device token registered' })
   } catch (error) {
     return res.status(500).json({ message: 'Failed to register device token', error })
