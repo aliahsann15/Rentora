@@ -1,9 +1,10 @@
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 import path from 'path'
-import { Server } from 'http'
+import { Server, createServer } from 'http'
 import { app } from './app'
 import { startBackgroundJobs } from './jobs/scheduler'
+import { initNotificationsGateway } from './services/notificationsGateway'
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') })
 
@@ -55,7 +56,9 @@ mongoose.connect(mongoUri, {
   .then(() => {
     console.log('MongoDB Connected')
     startBackgroundJobs()
-    httpServer = app.listen(port, () => {
+    httpServer = createServer(app)
+    initNotificationsGateway(httpServer)
+    httpServer.listen(port, () => {
       console.log(`Server running on port ${port}`)
     })
   })

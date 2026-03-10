@@ -8,7 +8,7 @@ import { TenantRequestsStackParamList } from '../../navigation/types'
 import { ROUTES } from '../../navigation/routes'
 import { api, RequestItem } from '../../services/api'
 import { useAppAlert } from '../../hooks/useAppAlert'
-import { subscribeNotifications } from '../../services/notificationsPoller'
+import { subscribeNotifications } from '../../services/notificationsSocket'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 
 type Props = NativeStackScreenProps<TenantRequestsStackParamList, 'MyRequestsList'>

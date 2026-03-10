@@ -19,7 +19,7 @@ import { useAppSelector } from './src/hooks/useAppSelector'
 import { SplashScreen } from './src/screens/auth/SplashScreen'
 import { setUnauthorizedHandler } from './src/services/api'
 import { setupPushNotificationsForUser } from './src/services/notificationService'
-import { startNotificationsPoller, stopNotificationsPoller } from './src/services/notificationsPoller'
+import { connectNotificationsSocket, disconnectNotificationsSocket } from './src/services/notificationsSocket'
 import { DeepLinkingConfig } from './src/constants/navigationConstants'
 import { AppAlertProvider } from './src/providers/AppAlertProvider'
 
@@ -46,9 +46,9 @@ const BootstrapGate = () => {
   useEffect(() => {
     void setupPushNotificationsForUser(user?._id)
     if (user?._id) {
-      startNotificationsPoller()
+      void connectNotificationsSocket(user._id)
     } else {
-      stopNotificationsPoller()
+      disconnectNotificationsSocket()
     }
   }, [user])
 
@@ -60,6 +60,7 @@ const BootstrapGate = () => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         void setupPushNotificationsForUser(user._id)
+        void connectNotificationsSocket(user._id)
       }
     })
 

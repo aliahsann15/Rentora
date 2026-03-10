@@ -73,10 +73,10 @@ const registerDevice = async (): Promise<string | null> => {
     return null
   }
 
-  console.log('Push token acquired', {
-    type: tokenResponse.type,
-    length: tokenResponse.data.length
-  })
+  // console.log('Push token acquired', {
+  //   type: tokenResponse.type,
+  //   length: tokenResponse.data.length
+  // })
 
   return tokenResponse.data
 }
@@ -133,7 +133,7 @@ export const setupPushNotificationsForUser = async (userId: string | null | unde
       token,
       device: Platform.OS
     })
-    console.log('Push token registered on backend')
+    // console.log('Push token registered on backend')
   } catch (error) {
     console.warn('Failed to save push token on backend', error)
     pushSetupState.hasAttemptedPushRegistration = false

@@ -5,7 +5,7 @@ import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
 import { api, RequestItem } from '../../services/api'
 import { useAppAlert } from '../../hooks/useAppAlert'
-import { subscribeNotifications } from '../../services/notificationsPoller'
+import { subscribeNotifications } from '../../services/notificationsSocket'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 import { ROUTES } from '../../navigation/routes'
 

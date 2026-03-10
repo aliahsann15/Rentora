@@ -3,6 +3,7 @@ import path from 'path'
 import { cert, getApps, initializeApp, App, applicationDefault } from 'firebase-admin/app'
 import { getMessaging, Messaging, MulticastMessage } from 'firebase-admin/messaging'
 import { FcmToken, Notification, User } from '../models'
+import { broadcastNotificationUpdate } from './notificationsGateway'
 
 interface NotificationPayload {
   userIds: string[]
@@ -229,6 +230,13 @@ export const createNotificationsAndPush = async (payload: NotificationPayload): 
       isRead: false
     }))
   )
+
+  broadcastNotificationUpdate({
+    userIds: uniqueUserIds,
+    organizationId: payload.organizationId,
+    type: payload.type,
+    referenceId: payload.referenceId
+  })
 
   const [users, legacyTokens] = await Promise.all([
     User.find({ _id: { $in: uniqueUserIds } }).select('pushTokens'),
