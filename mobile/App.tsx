@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { AppState } from 'react-native'
 import { Provider } from 'react-redux'
 import { StatusBar } from 'expo-status-bar'
 import {
@@ -18,6 +19,7 @@ import { useAppSelector } from './src/hooks/useAppSelector'
 import { SplashScreen } from './src/screens/auth/SplashScreen'
 import { setUnauthorizedHandler } from './src/services/api'
 import { setupPushNotificationsForUser } from './src/services/notificationService'
+import { startNotificationsPoller, stopNotificationsPoller } from './src/services/notificationsPoller'
 import { DeepLinkingConfig } from './src/constants/navigationConstants'
 import { AppAlertProvider } from './src/providers/AppAlertProvider'
 
@@ -42,7 +44,28 @@ const BootstrapGate = () => {
   }, [dispatch])
 
   useEffect(() => {
-    void setupPushNotificationsForUser(Boolean(user))
+    void setupPushNotificationsForUser(user?._id)
+    if (user?._id) {
+      startNotificationsPoller()
+    } else {
+      stopNotificationsPoller()
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void setupPushNotificationsForUser(user._id)
+      }
+    })
+
+    return () => {
+      subscription.remove()
+    }
   }, [user])
 
   if (initializing) {

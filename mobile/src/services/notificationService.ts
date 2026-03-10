@@ -3,9 +3,27 @@ import { Platform } from 'react-native'
 import Constants from 'expo-constants'
 import { api } from './api'
 
+type PushSetupState = {
+  hasAttemptedPushRegistration: boolean
+  hasLoggedPushRegistrationSkip: boolean
+  lastRegisteredUserId: string | null
+}
+
+const getPushSetupState = (): PushSetupState => {
+  const globalState = globalThis as Record<string, unknown>
+  if (!globalState.__rentoraPushSetupState) {
+    globalState.__rentoraPushSetupState = {
+      hasAttemptedPushRegistration: false,
+      hasLoggedPushRegistrationSkip: false,
+      lastRegisteredUserId: null
+    }
+  }
+
+  return globalState.__rentoraPushSetupState as PushSetupState
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
     shouldShowBanner: true,
@@ -13,31 +31,19 @@ Notifications.setNotificationHandler({
   })
 })
 
-const getProjectId = (): string | undefined => {
-  const easProjectId = Constants?.expoConfig?.extra?.eas?.projectId
-  const fallbackProjectId = (Constants as any)?.easConfig?.projectId
-
-  if (typeof easProjectId === 'string') {
-    return easProjectId
-  }
-
-  if (typeof fallbackProjectId === 'string') {
-    return fallbackProjectId
-  }
-
-  return undefined
-}
-
-const isExpoGo = (): boolean => {
-  const appOwnership = (Constants as any)?.appOwnership
-  const executionEnvironment = (Constants as any)?.executionEnvironment
-
-  return appOwnership === 'expo' || executionEnvironment === 'storeClient'
+const hasAndroidFirebaseConfig = (): boolean => {
+  const googleServicesFile = (Constants as any)?.expoConfig?.android?.googleServicesFile
+  return typeof googleServicesFile === 'string' && googleServicesFile.trim().length > 0
 }
 
 const registerDevice = async (): Promise<string | null> => {
-  if (isExpoGo()) {
-    return null
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#2C6BED'
+    })
   }
 
   const permissions = await Notifications.getPermissionsAsync()
@@ -52,27 +58,73 @@ const registerDevice = async (): Promise<string | null> => {
     return null
   }
 
-  const tokenResponse = await Notifications.getExpoPushTokenAsync({
-    projectId: getProjectId()
+  const tokenResponse = await Notifications.getDevicePushTokenAsync()
+  if (
+    Platform.OS === 'android' &&
+    tokenResponse.type !== 'fcm' &&
+    tokenResponse.type !== 'gcm' &&
+    tokenResponse.type !== 'android'
+  ) {
+    console.warn('Unexpected Android push token type', tokenResponse.type)
+    return null
+  }
+
+  if (!tokenResponse?.data || typeof tokenResponse.data !== 'string') {
+    return null
+  }
+
+  console.log('Push token acquired', {
+    type: tokenResponse.type,
+    length: tokenResponse.data.length
   })
 
   return tokenResponse.data
 }
 
-export const setupPushNotificationsForUser = async (isAuthenticated: boolean) => {
-  if (!isAuthenticated) {
+export const setupPushNotificationsForUser = async (userId: string | null | undefined) => {
+  const pushSetupState = getPushSetupState()
+  const normalizedUserId = typeof userId === 'string' && userId.trim().length > 0 ? userId : null
+
+  if (!normalizedUserId) {
+    pushSetupState.hasAttemptedPushRegistration = false
+    pushSetupState.lastRegisteredUserId = null
     return
   }
+
+  if (pushSetupState.lastRegisteredUserId !== normalizedUserId) {
+    pushSetupState.hasAttemptedPushRegistration = false
+    pushSetupState.lastRegisteredUserId = normalizedUserId
+  }
+
+  if (pushSetupState.hasAttemptedPushRegistration) {
+    return
+  }
+
+  if (Platform.OS === 'android' && !hasAndroidFirebaseConfig()) {
+    if (!pushSetupState.hasLoggedPushRegistrationSkip) {
+      console.warn(
+        'Push notifications are disabled on Android because Firebase is not configured. Add android/app/google-services.json and rebuild the dev client.'
+      )
+      pushSetupState.hasLoggedPushRegistrationSkip = true
+    }
+    pushSetupState.hasAttemptedPushRegistration = true
+    return
+  }
+
+  pushSetupState.hasAttemptedPushRegistration = true
 
   let token: string | null = null
 
   try {
     token = await registerDevice()
-  } catch {
+  } catch (error) {
+    console.warn('Push token registration failed', error)
+    pushSetupState.hasAttemptedPushRegistration = false
     return
   }
 
   if (!token) {
+    pushSetupState.hasAttemptedPushRegistration = false
     return
   }
 
@@ -81,7 +133,10 @@ export const setupPushNotificationsForUser = async (isAuthenticated: boolean) =>
       token,
       device: Platform.OS
     })
-  } catch {
+    console.log('Push token registered on backend')
+  } catch (error) {
+    console.warn('Failed to save push token on backend', error)
+    pushSetupState.hasAttemptedPushRegistration = false
     return
   }
 }
