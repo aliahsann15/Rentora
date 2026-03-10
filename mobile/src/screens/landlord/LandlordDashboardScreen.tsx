@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { useNavigation } from '@react-navigation/native'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { StatusBadge } from '../../components/StatusBadge'
 import { api, RequestItem } from '../../services/api'
+import { useAppAlert } from '../../hooks/useAppAlert'
+import { subscribeNotifications } from '../../services/notificationsPoller'
 import { colors, radius, spacing, typography } from '../../utils/theme'
 import { ROUTES } from '../../navigation/routes'
 
@@ -17,6 +19,7 @@ interface PropertyItem {
 
 export const LandlordDashboardScreen = () => {
   const navigation = useNavigation<any>()
+  const { showToast } = useAppAlert()
   const [requests, setRequests] = useState<RequestItem[]>([])
   const [units, setUnits] = useState<UnitItem[]>([])
   const [properties, setProperties] = useState<PropertyItem[]>([])
@@ -32,16 +35,36 @@ export const LandlordDashboardScreen = () => {
       setRequests(requestRes.data)
       setUnits(unitsRes.data)
       setProperties(propertiesRes.data)
-    } catch {
+    } catch (error: unknown) {
       setRequests([])
       setUnits([])
       setProperties([])
+
+      const responseMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      const statusCode = (error as { response?: { status?: number } })?.response?.status
+      const fallbackMessage = (error as { message?: string })?.message
+      const statusPrefix = statusCode ? `(${statusCode}) ` : ''
+
+      showToast({
+        type: 'error',
+        message: `${statusPrefix}${responseMessage || fallbackMessage || 'Unable to load dashboard data. Please try again.'}`
+      })
     }
   }
 
-  useEffect(() => {
-    void loadDashboard()
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      void loadDashboard()
+
+      const unsubscribe = subscribeNotifications(() => {
+        void loadDashboard()
+      })
+
+      return () => {
+        unsubscribe()
+      }
+    }, [])
+  )
 
   const totals = useMemo(() => {
     const activeRequests = requests.filter((item) => ['ASSIGNED', 'IN_PROGRESS'].includes(item.status)).length
