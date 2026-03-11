@@ -23,12 +23,32 @@ interface UnitItem {
   unitNumber: string
 }
 
-export const RequestDetailsScreen = ({ route, navigation }: Props) => {
-  const [request, setRequest] = useState<RequestItem | null>(null)
+interface TenantItem {
+  _id: string
+  name?: string
+}
 
-  const resolveRequestDisplayFields = async (requestData: RequestItem): Promise<RequestItem> => {
+interface VendorItem {
+  _id: string
+  services?: string[]
+  userId?: {
+    name?: string
+  }
+}
+
+interface RequestDisplayItem extends RequestItem {
+  tenantName?: string
+  vendorDisplay?: string
+}
+
+export const RequestDetailsScreen = ({ route, navigation }: Props) => {
+  const [request, setRequest] = useState<RequestDisplayItem | null>(null)
+
+  const resolveRequestDisplayFields = async (requestData: RequestItem): Promise<RequestDisplayItem> => {
     let propertyName = requestData.propertyName
     let unitNumber = requestData.unitNumber
+    let tenantName: string | undefined
+    let vendorDisplay: string | undefined
 
     if (!propertyName && requestData.propertyId) {
       try {
@@ -48,11 +68,46 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
       } catch {}
     }
 
+    if (requestData.tenantId) {
+      try {
+        const tenantRes = await api.get<TenantItem>(`/users/${requestData.tenantId}`)
+        tenantName = tenantRes.data?.name || undefined
+      } catch {}
+    }
+
+    if (requestData.vendorId) {
+      try {
+        const vendorsRes = await api.get<VendorItem[]>('/vendors')
+        const matchedVendor = vendorsRes.data.find((vendor) => vendor._id === requestData.vendorId)
+
+        if (matchedVendor) {
+          const vendorName = matchedVendor.userId?.name || 'Vendor'
+          const services = (matchedVendor.services || []).join(', ')
+          vendorDisplay = services ? `${vendorName} (${services})` : vendorName
+        }
+      } catch {}
+    }
+
     return {
       ...requestData,
       propertyName,
-      unitNumber
+      unitNumber,
+      tenantName,
+      vendorDisplay
     }
+  }
+
+  const formatDateOnly = (value: string | undefined) => {
+    if (!value) {
+      return '—'
+    }
+
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) {
+      return value
+    }
+
+    return parsed.toLocaleDateString('en-CA')
   }
 
   const loadRequest = async () => {
@@ -105,49 +160,58 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
     <ScreenContainer onRefresh={loadRequest}>
       <SubScreenHeader title='Request Details' />
 
-      <View style={styles.card}>
-        <Text style={styles.section}>Tenant Info</Text>
-        <Text style={styles.value}>Tenant ID: {request.tenantId || '—'}</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.section}>Property + Unit</Text>
-        <Text style={styles.value}>Property: {request.propertyName || request.propertyId || '—'}</Text>
-        <Text style={styles.value}>Unit: {request.unitNumber || request.unitId || '—'}</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.section}>Images (gallery)</Text>
-        <View style={styles.galleryRow}>
-          {(request as any).images?.length ? (
-            (request as any).images.map((uri: string) => <Image key={uri} source={{ uri }} style={styles.image} />)
-          ) : (
-            <Text style={styles.value}>No images</Text>
-          )}
+      <View style={styles.detailsPanel}>
+        <View style={styles.detailSection}>
+          <Text style={styles.section}>Tenant Info</Text>
+          <Text style={styles.value}>Tenant: {request.tenantName || '—'}</Text>
         </View>
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.section}>Status</Text>
-        <StatusBadge status={request.status} />
-      </View>
+        <View style={styles.divider} />
 
-      <View style={styles.card}>
-        <Text style={styles.section}>Activity Timeline</Text>
-        <Text style={styles.value}>Created at: {request.createdAt}</Text>
-      </View>
+        <View style={styles.detailSection}>
+          <Text style={styles.section}>Property + Unit</Text>
+          <Text style={styles.value}>Property: {request.propertyName || request.propertyId || '—'}</Text>
+          <Text style={styles.value}>Unit: {request.unitNumber || request.unitId || '—'}</Text>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.section}>Assigned Vendor</Text>
-        <Text style={styles.value}>{request.vendorId || 'Not assigned'}</Text>
+        <View style={styles.divider} />
+
+        <View style={styles.detailSection}>
+          <Text style={styles.section}>Images (gallery)</Text>
+          <View style={styles.galleryRow}>
+            {(request as any).images?.length ? (
+              (request as any).images.map((uri: string) => <Image key={uri} source={{ uri }} style={styles.image} />)
+            ) : (
+              <Text style={styles.value}>No images</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.detailSection}>
+          <Text style={styles.section}>Status</Text>
+          <StatusBadge status={request.status} />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.detailSection}>
+          <Text style={styles.section}>Activity Timeline</Text>
+          <Text style={styles.value}>Created at: {formatDateOnly(request.createdAt)}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.detailSection}>
+          <Text style={styles.section}>Assigned Vendor</Text>
+          <Text style={styles.value}>{request.vendorDisplay || 'Not assigned'}</Text>
+        </View>
       </View>
 
       <AppButton title='Assign Vendor' onPress={() => navigation.navigate(ROUTES.ASSIGN_VENDOR, { requestId: request._id })} />
 
       <View style={styles.actionsRow}>
-        <Pressable style={styles.actionBtn} onPress={() => updateStatus('IN_PROGRESS')}>
-          <Text style={styles.actionText}>Change Status</Text>
-        </Pressable>
         <Pressable style={[styles.actionBtn, styles.doneBtn]} onPress={markDone}>
           <Text style={[styles.actionText, styles.doneText]}>Mark Done</Text>
         </Pressable>
@@ -157,15 +221,23 @@ export const RequestDetailsScreen = ({ route, navigation }: Props) => {
 }
 
 const styles = StyleSheet.create({
-  card: {
+  detailsPanel: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     shadowColor: '#000',
     shadowOpacity: 0.04,
     shadowRadius: 10,
     elevation: 2
+  },
+  detailSection: {
+    gap: spacing.sm,
+    paddingVertical: spacing.sm
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border
   },
   section: {
     fontSize: typography.bodyM,
