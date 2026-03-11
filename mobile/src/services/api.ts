@@ -64,5 +64,8 @@ export interface RequestItem {
   propertyName?: string
   unitId?: string
   unitNumber?: string
+  tenantName?: string
+  vendorName?: string
+  vendorServices?: string[]
   createdAt: string
 }

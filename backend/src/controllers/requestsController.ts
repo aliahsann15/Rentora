@@ -48,6 +48,8 @@ const toIdString = (value: unknown): string | undefined => {
 const serializeRequest = (request: Record<string, unknown>) => {
   const property = request.propertyId as Record<string, unknown> | string | undefined
   const unit = request.unitId as Record<string, unknown> | string | undefined
+  const tenant = request.tenantId as Record<string, unknown> | string | undefined
+  const vendor = request.vendorId as Record<string, unknown> | string | undefined
   const propertyName =
     property && typeof property === 'object' && 'name' in property
       ? String(property.name || '')
@@ -55,6 +57,25 @@ const serializeRequest = (request: Record<string, unknown>) => {
   const unitNumber =
     unit && typeof unit === 'object' && 'unitNumber' in unit
       ? String(unit.unitNumber || '')
+      : undefined
+  const tenantName =
+    tenant && typeof tenant === 'object' && 'name' in tenant
+      ? String(tenant.name || '')
+      : undefined
+
+  const vendorUser =
+    vendor && typeof vendor === 'object' && 'userId' in vendor
+      ? (vendor.userId as Record<string, unknown> | string | undefined)
+      : undefined
+
+  const vendorName =
+    vendorUser && typeof vendorUser === 'object' && 'name' in vendorUser
+      ? String(vendorUser.name || '')
+      : undefined
+
+  const vendorServices =
+    vendor && typeof vendor === 'object' && 'services' in vendor && Array.isArray(vendor.services)
+      ? (vendor.services as unknown[]).map((service) => String(service))
       : undefined
 
   return {
@@ -65,7 +86,10 @@ const serializeRequest = (request: Record<string, unknown>) => {
     tenantId: toIdString(request.tenantId),
     vendorId: toIdString(request.vendorId),
     propertyName: propertyName || undefined,
-    unitNumber: unitNumber || undefined
+    unitNumber: unitNumber || undefined,
+    tenantName: tenantName || undefined,
+    vendorName: vendorName || undefined,
+    vendorServices: vendorServices || undefined
   }
 }
 
@@ -104,6 +128,8 @@ export const getRequests = async (req: Request, res: Response): Promise<Response
       .sort({ createdAt: -1 })
       .populate({ path: 'propertyId', select: 'name' })
       .populate({ path: 'unitId', select: 'unitNumber' })
+      .populate({ path: 'tenantId', select: 'name' })
+      .populate({ path: 'vendorId', select: 'services userId', populate: { path: 'userId', select: 'name' } })
       .lean()
 
     return res.status(200).json(requests.map((item) => serializeRequest(item as unknown as Record<string, unknown>)))
@@ -189,6 +215,8 @@ export const getRequestById = async (req: Request, res: Response): Promise<Respo
     const request = await MaintenanceRequest.findOne({ _id: requestId, ...filter })
       .populate({ path: 'propertyId', select: 'name' })
       .populate({ path: 'unitId', select: 'unitNumber' })
+      .populate({ path: 'tenantId', select: 'name' })
+      .populate({ path: 'vendorId', select: 'services userId', populate: { path: 'userId', select: 'name' } })
       .lean()
     if (!request) {
       return res.status(404).json({ message: 'Request not found' })

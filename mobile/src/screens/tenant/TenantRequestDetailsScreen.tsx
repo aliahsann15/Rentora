@@ -17,8 +17,12 @@ interface TenantAssignmentLookup {
   unitNumber: string
 }
 
+interface TenantRequestDisplayItem extends RequestItem {
+  vendorName?: string
+}
+
 export const TenantRequestDetailsScreen = ({ route }: Props) => {
-  const [request, setRequest] = useState<RequestItem | null>(null)
+  const [request, setRequest] = useState<TenantRequestDisplayItem | null>(null)
 
   const loadRequest = async () => {
     try {
@@ -28,7 +32,8 @@ export const TenantRequestDetailsScreen = ({ route }: Props) => {
       ])
 
       const assignment = assignmentRes?.data
-      const normalizedRequest: RequestItem = {
+
+      const normalizedRequest: TenantRequestDisplayItem = {
         ...requestRes.data,
         propertyName:
           requestRes.data.propertyName ||
@@ -39,7 +44,8 @@ export const TenantRequestDetailsScreen = ({ route }: Props) => {
           requestRes.data.unitNumber ||
           (assignment && requestRes.data.unitId === assignment.unitId
             ? assignment.unitNumber
-            : undefined)
+            : undefined),
+        vendorName: requestRes.data.vendorName || undefined
       }
 
       setRequest(normalizedRequest)
@@ -64,42 +70,83 @@ export const TenantRequestDetailsScreen = ({ route }: Props) => {
     <ScreenContainer onRefresh={loadRequest}>
       <SubScreenHeader title='Request Details' />
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Property</Text>
-        <Text style={styles.value}>{request.propertyName || '—'}</Text>
+      <View style={styles.detailsPanel}>
+        <View style={styles.detailSection}>
+          <Text style={styles.label}>Request Title</Text>
+          <Text style={styles.value}>{request.title || '—'}</Text>
+        </View>
 
-        <Text style={styles.label}>Unit Number</Text>
-        <Text style={styles.value}>{request.unitNumber || '—'}</Text>
-      </View>
+        <View style={styles.divider} />
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Status</Text>
-        <StatusBadge status={request.status} />
-      </View>
+        <View style={styles.detailSection}>
+          <Text style={styles.label}>Description</Text>
+          <Text style={styles.value}>{request.description || '—'}</Text>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Assigned Vendor</Text>
-        <Text style={styles.value}>{request.vendorId || 'Not assigned yet'}</Text>
-      </View>
+        <View style={styles.divider} />
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Timeline</Text>
-        <Text style={styles.value}>Created: {new Date(request.createdAt).toLocaleString()}</Text>
+        <View style={styles.detailSection}>
+          <Text style={styles.label}>Urgency</Text>
+          <Text style={styles.value}>{request.urgency || '—'}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.detailSection}>
+          <Text style={styles.label}>Property</Text>
+          <Text style={styles.value}>{request.propertyName || '—'}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.detailSection}>
+          <Text style={styles.label}>Unit Number</Text>
+          <Text style={styles.value}>{request.unitNumber || '—'}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.detailSection}>
+          <Text style={styles.label}>Status</Text>
+          <StatusBadge status={request.status} />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.detailSection}>
+          <Text style={styles.label}>Assigned Vendor</Text>
+          <Text style={styles.value}>{request.vendorName || 'Not assigned yet'}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.detailSection}>
+          <Text style={styles.label}>Timeline</Text>
+          <Text style={styles.value}>Created: {new Date(request.createdAt).toLocaleString()}</Text>
+        </View>
       </View>
     </ScreenContainer>
   )
 }
 
 const styles = StyleSheet.create({
-  card: {
+  detailsPanel: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     shadowColor: '#000',
     shadowOpacity: 0.04,
     shadowRadius: 10,
     elevation: 2
+  },
+  detailSection: {
+    gap: spacing.xs,
+    paddingVertical: spacing.sm
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border
   },
   label: {
     fontSize: typography.caption,
