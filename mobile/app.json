@@ -16,6 +16,10 @@
     },
     "android": {
       "googleServicesFile": "./android/app/google-services.json",
+      "notification": {
+        "icon": "./assets/notification-tray-icon.png",
+        "color": "#1E3A8A"
+      },
       "permissions": [
         "POST_NOTIFICATIONS"
       ],

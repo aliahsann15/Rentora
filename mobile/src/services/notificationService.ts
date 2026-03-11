@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import Constants from 'expo-constants'
 import { api } from './api'
+import { getAccessToken } from './authStorage'
 
 type PushSetupState = {
   hasAttemptedPushRegistration: boolean
@@ -128,6 +129,12 @@ export const setupPushNotificationsForUser = async (userId: string | null | unde
     return
   }
 
+  const accessToken = await getAccessToken()
+  if (!accessToken) {
+    pushSetupState.hasAttemptedPushRegistration = false
+    return
+  }
+
   try {
     await api.post('/notifications/register-token', {
       token,
@@ -135,6 +142,11 @@ export const setupPushNotificationsForUser = async (userId: string | null | unde
     })
     // console.log('Push token registered on backend')
   } catch (error) {
+    const statusCode = (error as { response?: { status?: number } })?.response?.status
+    if (statusCode === 401) {
+      pushSetupState.hasAttemptedPushRegistration = false
+      return
+    }
     console.warn('Failed to save push token on backend', error)
     pushSetupState.hasAttemptedPushRegistration = false
     return
