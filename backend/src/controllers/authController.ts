@@ -335,22 +335,35 @@ export const getMyProfile = async (req: Request, res: Response): Promise<Respons
       return res.status(404).json({ message: 'User not found' })
     }
 
-    let company: string | undefined
-    let companyAddress: string | undefined
+    // Only show tenant-specific info, plus landlord, property, unit
+    let landlordName: string | undefined
+    let propertyName: string | undefined
+    let unitNumber: string | undefined
 
-    if (user.organizationId) {
-      const organization = await Organization.findById(user.organizationId).select('name companyAddress')
-      company = organization?.name
-      companyAddress = organization?.companyAddress as string | undefined
+    if (user.role === 'TENANT') {
+      // Find unit assigned to tenant
+      const unit = await Unit.findOne({ tenantId: user._id })
+        .populate({ path: 'propertyId', select: 'name' })
+        .populate({ path: 'organizationId', select: 'ownerId' })
+      if (unit) {
+        unitNumber = unit.unitNumber
+        propertyName = (unit.propertyId as any)?.name
+        // Find landlord name from organization owner
+        if (unit.organizationId && (unit.organizationId as any)?.ownerId) {
+          const landlord = await User.findById((unit.organizationId as any).ownerId).select('name')
+          landlordName = landlord?.name
+        }
+      }
     }
 
     return res.status(200).json({
       profile: {
         fullName: user.name,
         email: user.email,
-        company,
-        companyAddress,
-        profileImage: user.avatar || undefined
+        profileImage: user.avatar || undefined,
+        landlordName,
+        propertyName,
+        unitNumber
       }
     })
   } catch (error) {

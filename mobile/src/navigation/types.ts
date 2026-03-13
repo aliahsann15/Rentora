@@ -115,7 +115,7 @@ export type LandlordSettingsStackScreenProps<T extends keyof LandlordSettingsSta
 export type TenantTabParamList = {
   MyRequests: NavigatorScreenParams<TenantRequestsStackParamList>
   NewRequest: undefined
-  Profile: undefined
+  Profile: NavigatorScreenParams<TenantSettingsStackParamList>
 }
 
 export type TenantTabScreenProps<T extends keyof TenantTabParamList> = CompositeScreenProps<
@@ -130,6 +130,16 @@ export type TenantRequestsStackParamList = {
 
 export type TenantRequestsStackScreenProps<T extends keyof TenantRequestsStackParamList> =
   NativeStackScreenProps<TenantRequestsStackParamList, T>
+
+export type TenantSettingsStackParamList = {
+  TenantSettingsHome: undefined
+  TenantProfile: undefined
+  EditTenantProfile: undefined
+  TenantChangePassword: undefined
+}
+
+export type TenantSettingsStackScreenProps<T extends keyof TenantSettingsStackParamList> =
+  NativeStackScreenProps<TenantSettingsStackParamList, T>
 
 // ============================================================================
 // VENDOR TABS & DETAIL MODALS

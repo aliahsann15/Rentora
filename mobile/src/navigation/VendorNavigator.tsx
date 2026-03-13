@@ -55,7 +55,7 @@ const ProfileTabScreen = () => <ProfileScreen role="VENDOR" />
  */
 export const VendorNavigator = () => {
   const accentColor = getRoleAccent('VENDOR')
-  const tabIcons: Record<keyof VendorTabParamList, string> = {
+  const tabIcons: Record<keyof VendorTabParamList, keyof typeof Ionicons.glyphMap> = {
     [ROUTES.ASSIGNED_REQUESTS]: 'construct-outline',
     [ROUTES.VENDOR_SERVICES]: 'briefcase-outline',
     [ROUTES.PROFILE]: 'settings-outline'
@@ -68,7 +68,8 @@ export const VendorNavigator = () => {
         tabBarActiveTintColor: accentColor,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarIcon: ({ color, size }) => {
-          return <Ionicons name={(tabIcons[route.name] || 'help-outline') as any} size={size} color={color} />
+          const iconName = tabIcons[route.name as keyof VendorTabParamList] || 'help-outline'
+          return <Ionicons name={iconName} size={size} color={color} />
         }
       })}
     >
@@ -93,7 +94,7 @@ export const VendorNavigator = () => {
         name={ROUTES.PROFILE}
         component={ProfileTabScreen}
         options={{
-          title: 'Profile'
+          title: 'Settings'
         }}
       />
     </Tab.Navigator>

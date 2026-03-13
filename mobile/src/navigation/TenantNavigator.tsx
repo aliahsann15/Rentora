@@ -2,20 +2,25 @@ import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
-import { ProfileScreen } from '../screens/ProfileScreen'
 import { colors, getRoleAccent } from '../utils/theme'
 import {
   TenantTabParamList,
-  TenantRequestsStackParamList
+  TenantRequestsStackParamList,
+  TenantSettingsStackParamList
 } from './types'
 import { defaultTabOptions } from './screenOptions'
 import { MyRequestsScreen } from '../screens/tenant/MyRequestsScreen'
 import { TenantRequestDetailsScreen } from '../screens/tenant/TenantRequestDetailsScreen'
 import { NewRequestScreen } from '../screens/tenant/NewRequestScreen'
+import { TenantSettingsScreen } from '../screens/tenant/TenantSettingsScreen'
+import { TenantProfileScreen } from '../screens/tenant/TenantProfileScreen'
+import { EditTenantProfileScreen } from '../screens/tenant/EditTenantProfileScreen'
+import { TenantChangePasswordScreen } from '../screens/tenant/TenantChangePasswordScreen'
 import { ROUTES } from './routes'
 
 const Tab = createBottomTabNavigator<TenantTabParamList>()
 const RequestStackNavigator = createNativeStackNavigator<TenantRequestsStackParamList>()
+const SettingsStackNavigator = createNativeStackNavigator<TenantSettingsStackParamList>()
 
 // ============================================================================
 // DETAIL MODAL STACKS (presented over tabs)
@@ -42,11 +47,36 @@ const RequestDetailsStack = () => {
   )
 }
 
+const TenantSettingsStack = () => {
+  return (
+    <SettingsStackNavigator.Navigator screenOptions={{ headerShown: false }}>
+      <SettingsStackNavigator.Screen
+        name={ROUTES.TENANT_SETTINGS_HOME}
+        component={TenantSettingsScreen}
+        options={{ title: 'Settings' }}
+      />
+      <SettingsStackNavigator.Screen
+        name={ROUTES.TENANT_PROFILE}
+        component={TenantProfileScreen}
+        options={{ title: 'Profile' }}
+      />
+      <SettingsStackNavigator.Screen
+        name={ROUTES.EDIT_TENANT_PROFILE}
+        component={EditTenantProfileScreen}
+        options={{ title: 'Edit Profile' }}
+      />
+      <SettingsStackNavigator.Screen
+        name={ROUTES.TENANT_CHANGE_PASSWORD}
+        component={TenantChangePasswordScreen}
+        options={{ title: 'Change Password' }}
+      />
+    </SettingsStackNavigator.Navigator>
+  )
+}
+
 // ============================================================================
 // TAB-SPECIFIC WRAPPER SCREENS
 // ============================================================================
-
-const ProfileTabScreen = () => <ProfileScreen role="TENANT" />
 
 // ============================================================================
 // TENANT TABS NAVIGATOR
@@ -59,7 +89,7 @@ const ProfileTabScreen = () => <ProfileScreen role="TENANT" />
  */
 export const TenantNavigator = () => {
   const accentColor = getRoleAccent('TENANT')
-  const tabIcons: Record<keyof TenantTabParamList, string> = {
+  const tabIcons: Record<keyof TenantTabParamList, keyof typeof Ionicons.glyphMap> = {
     [ROUTES.MY_REQUESTS]: 'construct-outline',
     [ROUTES.NEW_REQUEST]: 'add-circle-outline',
     [ROUTES.PROFILE]: 'settings-outline'
@@ -72,7 +102,8 @@ export const TenantNavigator = () => {
         tabBarActiveTintColor: accentColor,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarIcon: ({ color, size }) => {
-          return <Ionicons name={(tabIcons[route.name] || 'help-outline') as any} size={size} color={color} />
+          const iconName = tabIcons[route.name as keyof TenantTabParamList] || 'help-outline'
+          return <Ionicons name={iconName} size={size} color={color} />
         }
       })}
     >
@@ -95,9 +126,10 @@ export const TenantNavigator = () => {
 
       <Tab.Screen
         name={ROUTES.PROFILE}
-        component={ProfileTabScreen}
+        component={TenantSettingsStack}
         options={{
-          title: 'Profile'
+          title: 'Settings',
+          headerShown: false
         }}
       />
     </Tab.Navigator>

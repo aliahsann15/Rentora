@@ -71,7 +71,7 @@ const SettingsNavigator = () => {
   return (
     <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
       <SettingsStack.Screen name={ROUTES.SETTINGS_HOME} component={SettingsScreen} options={{ title: 'Settings' }} />
-      <SettingsStack.Screen name={ROUTES.LANDLORD_PROFILE} component={LandlordProfileScreen} options={{ title: 'Profile' }} />
+      <SettingsStack.Screen name={ROUTES.LANDLORD_PROFILE} component={LandlordProfileScreen} options={{ title: 'Settings' }} />
       <SettingsStack.Screen name={ROUTES.EDIT_LANDLORD_PROFILE} component={EditLandlordProfileScreen} options={{ title: 'Edit Profile' }} />
       <SettingsStack.Screen name={ROUTES.CHANGE_PASSWORD} component={ChangePasswordScreen} options={{ title: 'Change Password' }} />
     </SettingsStack.Navigator>
@@ -80,6 +80,13 @@ const SettingsNavigator = () => {
 
 export const LandlordNavigator = () => {
   const accentColor = getRoleAccent('LANDLORD')
+  const tabIcons: Record<keyof LandlordTabParamList, keyof typeof Ionicons.glyphMap> = {
+    [ROUTES.DASHBOARD]: 'grid-outline',
+    [ROUTES.REQUESTS]: 'construct-outline',
+    [ROUTES.PROPERTIES]: 'business-outline',
+    [ROUTES.USERS]: 'people-outline',
+    [ROUTES.SETTINGS]: 'settings-outline'
+  }
 
   return (
     <Tab.Navigator
@@ -88,15 +95,8 @@ export const LandlordNavigator = () => {
         tabBarActiveTintColor: accentColor,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarIcon: ({ color, size }) => {
-          const icons: Record<string, string> = {
-            [ROUTES.DASHBOARD]: 'grid-outline',
-            [ROUTES.REQUESTS]: 'construct-outline',
-            [ROUTES.PROPERTIES]: 'business-outline',
-            [ROUTES.USERS]: 'people-outline',
-            [ROUTES.SETTINGS]: 'settings-outline'
-          }
-
-          return <Ionicons name={(icons[route.name] || 'help-outline') as any} size={size} color={color} />
+          const iconName = tabIcons[route.name as keyof LandlordTabParamList] || 'help-outline'
+          return <Ionicons name={iconName} size={size} color={color} />
         }
       })}
     >
