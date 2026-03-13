@@ -68,7 +68,7 @@ export const LandlordDashboardScreen = () => {
 
   const totals = useMemo(() => {
     const activeRequests = requests.filter((item) => ['ASSIGNED', 'IN_PROGRESS'].includes(item.status)).length
-    const pendingRequests = requests.filter((item) => ['NEW', 'DONE'].includes(item.status)).length
+    const pendingRequests = requests.filter((item) => item.status === 'NEW').length
 
     return {
       totalProperties: properties.length,
@@ -78,7 +78,10 @@ export const LandlordDashboardScreen = () => {
     }
   }, [requests, units, properties])
 
-  const recentRequests = useMemo(() => requests.slice(0, 5), [requests])
+  const recentRequests = useMemo(
+    () => [...requests].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 2),
+    [requests]
+  )
 
   return (
     <ScreenContainer onRefresh={loadDashboard}>
@@ -112,7 +115,7 @@ export const LandlordDashboardScreen = () => {
         </Pressable>
       </View>
 
-      <Text style={styles.sectionTitle}>Recently Updated Requests</Text>
+      <Text style={styles.sectionTitle}>Recent Requests</Text>
 
       {recentRequests.map((request) => (
         <Pressable
