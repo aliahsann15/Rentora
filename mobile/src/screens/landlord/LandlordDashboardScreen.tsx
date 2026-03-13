@@ -17,6 +17,12 @@ interface PropertyItem {
   _id: string
 }
 
+interface ActivityItem {
+  id: string
+  title: string
+  timeLabel: string
+}
+
 export const LandlordDashboardScreen = () => {
   const navigation = useNavigation<any>()
   const { showToast } = useAppAlert()
@@ -83,6 +89,45 @@ export const LandlordDashboardScreen = () => {
     [requests]
   )
 
+  const formatRelativeTime = (isoDate: string) => {
+    const timestamp = new Date(isoDate).getTime()
+    const now = Date.now()
+    const diffMs = Math.max(0, now - timestamp)
+    const minuteMs = 60 * 1000
+    const hourMs = 60 * minuteMs
+    const dayMs = 24 * hourMs
+
+    if (diffMs < hourMs) {
+      const minutes = Math.max(1, Math.floor(diffMs / minuteMs))
+      return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+    }
+
+    if (diffMs < dayMs) {
+      const hours = Math.floor(diffMs / hourMs)
+      return `${hours} hour${hours === 1 ? '' : 's'} ago`
+    }
+
+    if (diffMs < dayMs * 2) {
+      return 'Yesterday'
+    }
+
+    const days = Math.floor(diffMs / dayMs)
+    return `${days} days ago`
+  }
+
+  const recentActivities = useMemo<ActivityItem[]>(
+    () =>
+      [...requests]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 2)
+        .map((request) => ({
+          id: request._id,
+          title: `New maintenance request from Unit ${request.unitNumber || '—'}`,
+          timeLabel: formatRelativeTime(request.createdAt)
+        })),
+    [requests]
+  )
+
   return (
     <ScreenContainer onRefresh={loadDashboard}>
       <Text style={styles.title}>Dashboard</Text>
@@ -114,6 +159,15 @@ export const LandlordDashboardScreen = () => {
           <Text style={styles.statLabel}>Pending Requests</Text>
         </Pressable>
       </View>
+
+      <Text style={styles.sectionTitle}>Recent Activity</Text>
+
+      {recentActivities.map((activity) => (
+        <View key={activity.id} style={styles.activityCard}>
+          <Text style={styles.activityTitle}>{activity.title}</Text>
+          <Text style={styles.activityTime}>{activity.timeLabel}</Text>
+        </View>
+      ))}
 
       <Text style={styles.sectionTitle}>Recent Requests</Text>
 
@@ -171,6 +225,28 @@ const styles = StyleSheet.create({
     fontSize: typography.headingM,
     fontFamily: 'Inter_700Bold',
     color: colors.textPrimary
+  },
+  activityCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.xs,
+    ...{
+      shadowColor: '#000',
+      shadowOpacity: 0.04,
+      shadowRadius: 10,
+      elevation: 2
+    }
+  },
+  activityTitle: {
+    fontSize: typography.bodyL,
+    fontFamily: 'Inter_600SemiBold',
+    color: colors.textPrimary
+  },
+  activityTime: {
+    fontSize: typography.bodyM,
+    fontFamily: 'Inter_500Medium',
+    color: colors.textSecondary
   },
   requestCard: {
     backgroundColor: colors.surface,
