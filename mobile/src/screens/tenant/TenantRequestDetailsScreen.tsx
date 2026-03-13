@@ -135,26 +135,22 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2
   },
   detailSection: {
     gap: spacing.xs,
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.md
   },
   divider: {
     height: 1,
     backgroundColor: colors.border
   },
   label: {
-    fontSize: typography.caption,
-    color: colors.textMuted,
-    fontFamily: 'Inter_500Medium'
+    fontSize: typography.bodyM,
+    color: colors.textSecondary,
+    fontFamily: 'Inter_600SemiBold'
   },
   value: {
-    fontSize: typography.bodyM,
+    fontSize: typography.bodyL,
     color: colors.textPrimary,
     fontFamily: 'Inter_400Regular'
   }
