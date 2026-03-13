@@ -101,7 +101,11 @@ export const LandlordNavigator = () => {
       })}
     >
       <Tab.Screen name={ROUTES.DASHBOARD} component={LandlordDashboardScreen} />
-      <Tab.Screen name={ROUTES.REQUESTS} component={RequestsNavigator} options={{ headerShown: false }} />
+      <Tab.Screen
+        name={ROUTES.REQUESTS}
+        component={RequestsNavigator}
+        options={{ headerShown: false, popToTopOnBlur: true }}
+      />
       <Tab.Screen name={ROUTES.PROPERTIES} component={PropertiesNavigator} options={{ headerShown: false }} />
       <Tab.Screen name={ROUTES.USERS} component={UsersNavigator} options={{ headerShown: false }} />
       <Tab.Screen name={ROUTES.SETTINGS} component={SettingsNavigator} options={{ headerShown: false }} />
