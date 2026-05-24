@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary
   },
   secondary: {
-    backgroundColor: colors.backgroundDark
+    backgroundColor: colors.secondary
   },
   danger: {
     backgroundColor: colors.danger

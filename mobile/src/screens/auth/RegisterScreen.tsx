@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image, Pressable, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ScreenContainer } from '../../components/ScreenContainer'
 import { useAppDispatch } from '../../hooks/useAppDispatch'
@@ -42,77 +42,98 @@ export const RegisterScreen = ({ navigation }: Props) => {
             <Text style={styles.title}>Create account</Text>
             <Text style={styles.subtitle}>Creates your organization and starts trial</Text>
 
-          <TextInput
-            value={name}
-            onChangeText={(value) => {
-              setName(value)
-              dispatch(clearAuthError())
-            }}
-            placeholder='Name'
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-          />
-
-          <TextInput
-            value={email}
-            onChangeText={(value) => {
-              setEmail(value)
-              dispatch(clearAuthError())
-            }}
-            placeholder='Email'
-            placeholderTextColor={colors.textMuted}
-            autoCapitalize='none'
-            keyboardType='email-address'
-            style={styles.input}
-          />
-
-          <View style={styles.inputRow}>
             <TextInput
-              value={password}
+              value={name}
               onChangeText={(value) => {
-                setPassword(value)
+                setName(value)
                 dispatch(clearAuthError())
               }}
-              placeholder='Password'
+              placeholder='Name'
               placeholderTextColor={colors.textMuted}
-              secureTextEntry={!showPassword}
-              style={styles.passwordInput}
+              style={styles.input}
             />
-            <Pressable
-              accessibilityRole='button'
-              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-              onPress={() => setShowPassword((prev) => !prev)}
-              hitSlop={8}
-            >
-              <Ionicons
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                size={20}
-                color={colors.textMuted}
+
+            <TextInput
+              value={email}
+              onChangeText={(value) => {
+                setEmail(value)
+                dispatch(clearAuthError())
+              }}
+              placeholder='Email'
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize='none'
+              keyboardType='email-address'
+              style={styles.input}
+            />
+
+            <View style={styles.inputRow}>
+              <TextInput
+                value={password}
+                onChangeText={(value) => {
+                  setPassword(value)
+                  dispatch(clearAuthError())
+                }}
+                placeholder='Password'
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry={!showPassword}
+                style={styles.passwordInput}
               />
+              <Pressable
+                accessibilityRole='button'
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                onPress={() => setShowPassword((prev) => !prev)}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+            </View>
+
+            <TextInput
+              value={organizationName}
+              onChangeText={(value) => {
+                setOrganizationName(value)
+                dispatch(clearAuthError())
+              }}
+              placeholder='Organization Name'
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+            />
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <Pressable
+              style={[styles.createButton, loading && styles.disabledButton]}
+              onPress={onSubmit}
+              accessibilityRole='button'
+              disabled={loading}
+            >
+              <Text style={styles.createButtonLabel}>{loading ? 'Creating...' : 'Create account'}</Text>
             </Pressable>
-          </View>
 
-          <TextInput
-            value={organizationName}
-            onChangeText={(value) => {
-              setOrganizationName(value)
-              dispatch(clearAuthError())
-            }}
-            placeholder='Organization Name'
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-          />
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <View style={{ width: spacing.sm }} />
+              <Text style={{ color: colors.textMuted, fontSize: typography.caption }}>or continue with</Text>
+              <View style={{ width: spacing.sm }} />
+              <View style={styles.dividerLine} />
+            </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <Pressable
-            style={[styles.createButton, loading && styles.disabledButton]}
-            onPress={onSubmit}
-            accessibilityRole='button'
-            disabled={loading}
-          >
-            <Text style={styles.createButtonLabel}>{loading ? 'Creating...' : 'Create account'}</Text>
-          </Pressable>
+            <View style={{ gap: spacing.sm, flexDirection: 'row' }}>
+              {Platform.OS === 'ios' && (
+                <Pressable style={styles.registerButton} onPress={() => navigation.navigate(ROUTES.REGISTER)} accessibilityRole='button' >
+                  <Ionicons name='logo-apple' size={20} color={colors.surface} />
+                  <Text style={styles.registerButtonLabel}>Apple</Text>
+                </Pressable>
+              )}
+              <Pressable style={styles.registerButton} onPress={() => navigation.navigate(ROUTES.REGISTER)} accessibilityRole='button' >
+                <Ionicons name='logo-google' size={20} color={colors.surface} />
+                <Text style={styles.registerButtonLabel}>Google</Text>
+              </Pressable>
+            </View>
 
             <View style={styles.loginRow}>
               <Text style={styles.loginPrompt}>Already have an account?</Text>
@@ -160,11 +181,11 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   title: {
-    fontSize: typography.headingL,
+    fontSize: typography.headingXL,
     color: colors.textPrimary,
     fontFamily: 'Inter_700Bold',
     textAlign: 'center',
-    marginBottom: -spacing.sm
+    marginBottom: -spacing.md
   },
   subtitle: {
     fontSize: typography.bodyM,
@@ -181,14 +202,14 @@ const styles = StyleSheet.create({
     fontSize: typography.bodyM,
     color: colors.textPrimary,
     fontFamily: 'Inter_400Regular',
-    backgroundColor: colors.background
+    backgroundColor: colors.surface
   },
   inputRow: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     height: 48,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -233,5 +254,33 @@ const styles = StyleSheet.create({
   loginPrompt: {
     color: colors.textSecondary,
     fontFamily: 'Inter_400Regular'
-  }
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs
+  },
+  dividerLine: {
+    height: 1,
+    backgroundColor: colors.border,
+    flex: 1,
+    maxWidth: 120
+  },
+  registerButton: {
+    height: 56,
+    borderRadius: radius.md,
+    backgroundColor: colors.backgroundDark,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1
+  },
+  registerButtonLabel: {
+    color: colors.surface,
+    fontFamily: 'Inter_700Bold',
+    fontSize: typography.bodyL
+  },
 })

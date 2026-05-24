@@ -95,10 +95,11 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   title: {
-    fontSize: typography.headingL,
+    fontSize: typography.headingXL,
     color: colors.textPrimary,
     fontFamily: 'Inter_700Bold',
-    textAlign: 'center'
+    textAlign: 'center',
+    marginBottom: -spacing.md,
   },
   subtitle: {
     fontSize: typography.bodyM,
@@ -115,7 +116,9 @@ const styles = StyleSheet.create({
     fontSize: typography.bodyM,
     color: colors.textPrimary,
     fontFamily: 'Inter_400Regular',
-    backgroundColor: colors.background
+    backgroundColor: colors.surface,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm
   },
   error: {
     color: colors.danger,

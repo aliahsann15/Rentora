@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AppButton } from '../../components/AppButton'
 import { ScreenContainer } from '../../components/ScreenContainer'
@@ -38,8 +38,8 @@ export const LoginScreen = ({ navigation }: Props) => {
 
         <View style={styles.centerContent}>
           <View style={styles.formBlock}>
-            <Text style={styles.title}>Login account</Text>
-            <Text style={styles.subtitle}>Access your property workspace</Text>
+            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.subtitle}>Enter your credentials to access your properties</Text>
 
             <TextInput
               value={email}
@@ -88,16 +88,40 @@ export const LoginScreen = ({ navigation }: Props) => {
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            <View style={styles.divider} />
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <View style={{ width: spacing.sm }} />
+              <Text style={{ color: colors.textMuted, fontSize: typography.caption }}>or continue with</Text>
+              <View style={{ width: spacing.sm }} />
+              <View style={styles.dividerLine} />
+            </View>
 
-            <Pressable
-              style={styles.registerButton}
+            <View style={{ gap: spacing.sm, flexDirection: 'row' }}>
+              {Platform.OS === 'ios' && (
+                <Pressable style={styles.registerButton} onPress={() => navigation.navigate(ROUTES.REGISTER)} accessibilityRole='button' >
+                  <Ionicons name='logo-apple' size={20} color={colors.surface} />
+                  <Text style={styles.registerButtonLabel}>Apple</Text>
+                </Pressable>
+              )}
+              <Pressable style={styles.registerButton} onPress={() => navigation.navigate(ROUTES.REGISTER)} accessibilityRole='button' >
+                <Ionicons name='logo-google' size={20} color={colors.surface} />
+                <Text style={styles.registerButtonLabel}>Google</Text>
+              </Pressable>
+            </View>
+
+          </View>
+
+          <Text style={[styles.subtitle, { marginTop: spacing.lg }]}>
+            Don't have an account?{' '}
+            <Text
+              style={[styles.link, { fontSize: typography.bodyM }]}
               onPress={() => navigation.navigate(ROUTES.REGISTER)}
               accessibilityRole='button'
             >
-              <Text style={styles.registerButtonLabel}>Create account</Text>
-            </Pressable>
-          </View>
+              Sign up
+            </Text>
+          </Text>
+
         </View>
       </View>
     </ScreenContainer>
@@ -137,11 +161,11 @@ const styles = StyleSheet.create({
     gap: spacing.md
   },
   title: {
-    fontSize: typography.headingL,
+    fontSize: typography.headingXL,
     color: colors.textPrimary,
     fontFamily: 'Inter_700Bold',
     textAlign: 'center',
-    marginBottom: -spacing.sm
+    marginBottom: -spacing.md
   },
   subtitle: {
     fontSize: typography.bodyM,
@@ -158,14 +182,14 @@ const styles = StyleSheet.create({
     fontSize: typography.bodyM,
     color: colors.textPrimary,
     fontFamily: 'Inter_400Regular',
-    backgroundColor: colors.background
+    backgroundColor: colors.surface
   },
   inputRow: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     height: 48,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -175,19 +199,26 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: typography.bodyM,
     color: colors.textPrimary,
-    fontFamily: 'Inter_400Regular'
+    fontFamily: 'Inter_400Regular',
   },
   link: {
-    marginTop: -spacing.xs,
+    marginTop: -spacing.sm,
     color: colors.primary,
-    fontSize: typography.bodyL,
+    fontSize: typography.caption,
     fontFamily: 'Inter_600SemiBold'
   },
-  divider: {
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs
+  },
+  dividerLine: {
     height: 1,
     backgroundColor: colors.border,
-    marginTop: spacing.xs,
-    marginBottom: spacing.md
+    flex: 1,
+    maxWidth: 120
   },
   loginButton: {
     height: 56,
@@ -197,8 +228,11 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: radius.md,
     backgroundColor: colors.backgroundDark,
+    flexDirection: 'row',
+    gap: spacing.sm,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    flex: 1
   },
   registerButtonLabel: {
     color: colors.surface,

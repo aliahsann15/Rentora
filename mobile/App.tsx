@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AppState } from 'react-native'
 import { Provider } from 'react-redux'
 import { StatusBar } from 'expo-status-bar'
@@ -23,7 +23,13 @@ import { connectNotificationsSocket, disconnectNotificationsSocket } from './src
 import { DeepLinkingConfig } from './src/constants/navigationConstants'
 import { AppAlertProvider } from './src/providers/AppAlertProvider'
 
-const BootstrapGate = () => {
+type BootstrapGateProps = {
+  fontsLoaded: boolean
+  splashComplete: boolean
+  onSplashComplete: () => void
+}
+
+const BootstrapGate = ({ fontsLoaded, splashComplete, onSplashComplete }: BootstrapGateProps) => {
   const dispatch = useAppDispatch()
   const initializing = useAppSelector((state) => state.auth.initializing)
 
@@ -69,14 +75,15 @@ const BootstrapGate = () => {
     }
   }, [user])
 
-  if (initializing) {
-    return <SplashScreen />
+  if (!fontsLoaded || initializing || !splashComplete) {
+    return <SplashScreen onAnimationComplete={onSplashComplete} />
   }
 
   return <RootNavigator />
 }
 
 export default function App() {
+  const [splashComplete, setSplashComplete] = useState(false)
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -94,7 +101,11 @@ export default function App() {
       <PersistGate loading={null} persistor={persistor}>
         <AppAlertProvider>
           <NavigationContainer linking={DeepLinkingConfig} fallback={null}>
-            <BootstrapGate />
+            <BootstrapGate
+              fontsLoaded={fontsLoaded}
+              splashComplete={splashComplete}
+              onSplashComplete={() => setSplashComplete(true)}
+            />
           </NavigationContainer>
         </AppAlertProvider>
       </PersistGate>

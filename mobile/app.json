@@ -15,10 +15,9 @@
       "supportsTablet": true
     },
     "android": {
-      "googleServicesFile": "./android/app/google-services.json",
       "notification": {
         "icon": "./assets/notification-tray-icon.png",
-        "color": "#1E3A8A"
+        "color": "#3E54D3"
       },
       "permissions": [
         "POST_NOTIFICATIONS"
@@ -29,12 +28,13 @@
       },
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true,
-      "package": "com.anonymous.mobile"
+      "package": "com.rentora"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withIconBackground",
       "expo-notifications",
       [
         "@stripe/stripe-react-native",
