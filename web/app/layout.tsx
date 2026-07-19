@@ -23,6 +23,9 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="preload" href="/bg.png" as="image" />
+      </head>
       <body className="min-h-full">{children}</body>
     </html>
   );

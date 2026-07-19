@@ -125,9 +125,33 @@ a {
   color: var(--rentora-primary-dark);
 }
 
-:focus-visible {
-  outline: 3px solid rgb(107 120 246 / 42%);
-  outline-offset: 2px;
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--rentora-text-primary);
+}
+
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+input[aria-invalid="true"]:focus,
+textarea[aria-invalid="true"]:focus {
+  border-color: var(--rentora-danger);
+}
+
+.rentora-password-field:has(input[aria-invalid="true"]),
+.rentora-password-field:has(input[aria-invalid="true"]:focus) {
+  border-color: var(--rentora-danger);
+}
+
+.rentora-password-field:has(input:-webkit-autofill) {
+  background: rgb(232 240 254);
+}
+
+.rentora-password-field input:-webkit-autofill,
+.rentora-password-field input:-webkit-autofill:hover,
+.rentora-password-field input:-webkit-autofill:focus {
+  border-radius: 0;
+  -webkit-box-shadow: 0 0 0 1000px rgb(232 240 254) inset;
 }
 
 .rentora-card {

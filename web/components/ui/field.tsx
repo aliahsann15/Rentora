@@ -10,7 +10,7 @@ type FieldProps = {
 export function Field({ children, error, hint, label }: FieldProps) {
   return (
     <label className="grid gap-2">
-      <span className="text-xs font-semibold text-text-muted">{label}</span>
+      <span className="text-xs font-semibold text-text-primary">{label}</span>
       {children}
       {error ? <span className="text-xs font-medium text-danger">{error}</span> : null}
       {!error && hint ? <span className="text-xs font-medium text-text-muted">{hint}</span> : null}
@@ -19,7 +19,7 @@ export function Field({ children, error, hint, label }: FieldProps) {
 }
 
 export function FieldLabel({ className = "", ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
-  return <label className={["grid gap-2 text-xs font-semibold text-text-muted", className].join(" ")} {...props} />;
+  return <label className={["grid gap-2 text-xs font-semibold text-text-primary", className].join(" ")} {...props} />;
 }
 
 export function TextField({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
@@ -27,7 +27,7 @@ export function TextField({ className = "", ...props }: InputHTMLAttributes<HTML
     <input
       className={[
         "h-11 rounded-md border border-border bg-surface px-3 text-sm text-text-primary shadow-sm transition",
-        "placeholder:text-text-muted hover:border-secondary-light focus:border-primary focus:outline-none",
+        "placeholder:text-text-muted hover:border-text-muted focus:border-text-primary focus:outline-none",
         "disabled:bg-surface-muted disabled:text-text-muted",
         className,
       ].join(" ")}
@@ -41,7 +41,7 @@ export function TextArea({ className = "", ...props }: TextareaHTMLAttributes<HT
     <textarea
       className={[
         "min-h-28 resize-y rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-text-primary shadow-sm transition",
-        "placeholder:text-text-muted hover:border-secondary-light focus:border-primary focus:outline-none",
+        "placeholder:text-text-muted hover:border-text-muted focus:border-text-primary focus:outline-none",
         "disabled:bg-surface-muted disabled:text-text-muted",
         className,
       ].join(" ")}
