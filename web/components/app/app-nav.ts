@@ -11,6 +11,7 @@ export const appNavItems: AppNavItem[] = [
   { href: "/app/dashboard", icon: FiGrid, label: "Dashboard" },
   { href: "/app/requests", icon: FiBriefcase, label: "Requests" },
   { href: "/app/properties", icon: LuBuilding2, label: "Properties" },
-  { href: "/app/users", icon: FiUsers, label: "People" },
+  { href: "/app/tenants", icon: FiUsers, label: "Tenants" },
+  { href: "/app/vendors", icon: FiBriefcase, label: "Vendors" },
   { href: "/app/settings", icon: FiSettings, label: "Settings" },
 ];

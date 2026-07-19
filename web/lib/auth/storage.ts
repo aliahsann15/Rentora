@@ -4,26 +4,48 @@ export const ACCESS_TOKEN_KEY = "rentora_access_token";
 export const REFRESH_TOKEN_KEY = "rentora_refresh_token";
 export const AUTH_USER_KEY = "rentora_auth_user";
 
+type AuthStorage = Pick<Storage, "getItem" | "removeItem" | "setItem">;
+
+function getStorage(rememberMe: boolean): AuthStorage {
+  return rememberMe ? window.localStorage : window.sessionStorage;
+}
+
+function removeSessionFrom(storage: AuthStorage) {
+  storage.removeItem(ACCESS_TOKEN_KEY);
+  storage.removeItem(REFRESH_TOKEN_KEY);
+  storage.removeItem(AUTH_USER_KEY);
+}
+
+function getStoredValue(key: string): string | null {
+  return window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
+}
+
 export function saveAuthSession({
   accessToken,
+  rememberMe = true,
   refreshToken,
   user,
 }: {
   accessToken: string;
+  rememberMe?: boolean;
   refreshToken: string;
   user: AuthUser;
 }) {
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  removeSessionFrom(window.localStorage);
+  removeSessionFrom(window.sessionStorage);
+
+  const storage = getStorage(rememberMe);
+  storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  storage.setItem(AUTH_USER_KEY, JSON.stringify(user));
 }
 
 export function getAccessToken(): string | null {
-  return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  return getStoredValue(ACCESS_TOKEN_KEY);
 }
 
 export function getAuthUser(): AuthUser | null {
-  const rawUser = window.localStorage.getItem(AUTH_USER_KEY);
+  const rawUser = getStoredValue(AUTH_USER_KEY);
 
   if (!rawUser) {
     return null;
@@ -37,7 +59,6 @@ export function getAuthUser(): AuthUser | null {
 }
 
 export function clearAuthSession() {
-  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-  window.localStorage.removeItem(REFRESH_TOKEN_KEY);
-  window.localStorage.removeItem(AUTH_USER_KEY);
+  removeSessionFrom(window.localStorage);
+  removeSessionFrom(window.sessionStorage);
 }

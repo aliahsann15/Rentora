@@ -17,6 +17,7 @@ export function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors<LoginField>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
 
   const canSubmit = useMemo(() => {
     return email.trim().length > 0 && password.length > 0 && !isLoading;
@@ -45,7 +46,7 @@ export function LoginForm() {
         password,
       });
 
-      saveAuthSession(response);
+      saveAuthSession({ ...response, rememberMe });
       window.location.assign(getPostLoginPath(response.user.role));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Unable to sign in. Please try again.");
@@ -94,7 +95,9 @@ export function LoginForm() {
       <div className="flex items-center justify-between gap-4">
         <label className="flex items-center gap-2 text-sm font-medium text-text-secondary">
           <input
+            checked={rememberMe}
             className="size-4 rounded border-border accent-[var(--rentora-primary)]"
+            onChange={(event) => setRememberMe(event.target.checked)}
             type="checkbox"
           />
           Remember me
