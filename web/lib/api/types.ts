@@ -77,3 +77,13 @@ export type SubscriptionStatus = {
   unitLimit?: number;
   trialEndsAt?: string;
 };
+
+export type NotificationItem = {
+  _id: string;
+  body: string;
+  createdAt: string;
+  isRead: boolean;
+  referenceId?: string;
+  title: string;
+  type: string;
+};

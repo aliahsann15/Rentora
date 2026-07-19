@@ -155,10 +155,10 @@ function SelectField({
   );
 }
 
-export function RequestsPage() {
+export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<RequestFilters>(initialFilters);
+  const [filters, setFilters] = useState<RequestFilters>(() => ({ ...initialFilters, query: initialQuery }));
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [requests, setRequests] = useState<RequestItem[]>([]);

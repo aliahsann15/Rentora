@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { clearAuthSession, getAuthUser } from "@/lib/auth/storage";
 import type { AuthUser } from "@/lib/auth/types";
 import { Sidebar } from "./sidebar";
@@ -12,13 +12,21 @@ type AppShellProps = {
 };
 
 export function AppShell({ children }: AppShellProps) {
-  const [user] = useState<AuthUser | null>(() => {
+  const [user, setUser] = useState<AuthUser | null>(() => {
     if (typeof window === "undefined") {
       return null;
     }
 
     return getAuthUser();
   });
+
+  useEffect(() => {
+    const syncUser = () => setUser(getAuthUser());
+
+    window.addEventListener("rentora-auth-user-changed", syncUser);
+
+    return () => window.removeEventListener("rentora-auth-user-changed", syncUser);
+  }, []);
 
   const signOut = () => {
     clearAuthSession();

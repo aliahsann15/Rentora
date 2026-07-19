@@ -20,6 +20,22 @@ function getStoredValue(key: string): string | null {
   return window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
 }
 
+function getSessionStorageForKey(key: string): AuthStorage | null {
+  if (window.localStorage.getItem(key)) {
+    return window.localStorage;
+  }
+
+  if (window.sessionStorage.getItem(key)) {
+    return window.sessionStorage;
+  }
+
+  return null;
+}
+
+function notifyAuthUserChanged() {
+  window.dispatchEvent(new Event("rentora-auth-user-changed"));
+}
+
 export function saveAuthSession({
   accessToken,
   rememberMe = true,
@@ -38,10 +54,15 @@ export function saveAuthSession({
   storage.setItem(ACCESS_TOKEN_KEY, accessToken);
   storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   storage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  notifyAuthUserChanged();
 }
 
 export function getAccessToken(): string | null {
   return getStoredValue(ACCESS_TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  return getStoredValue(REFRESH_TOKEN_KEY);
 }
 
 export function getAuthUser(): AuthUser | null {
@@ -58,7 +79,20 @@ export function getAuthUser(): AuthUser | null {
   }
 }
 
+export function updateAuthUserSession(updates: Partial<AuthUser>) {
+  const currentUser = getAuthUser();
+  const storage = getSessionStorageForKey(AUTH_USER_KEY);
+
+  if (!currentUser || !storage) {
+    return;
+  }
+
+  storage.setItem(AUTH_USER_KEY, JSON.stringify({ ...currentUser, ...updates }));
+  notifyAuthUserChanged();
+}
+
 export function clearAuthSession() {
   removeSessionFrom(window.localStorage);
   removeSessionFrom(window.sessionStorage);
+  notifyAuthUserChanged();
 }

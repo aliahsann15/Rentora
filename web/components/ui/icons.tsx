@@ -19,6 +19,7 @@ export {
   FiMail,
   FiMenu,
   FiPlus,
+  FiRefreshCw,
   FiSearch,
   FiSettings,
   FiTrash2,
