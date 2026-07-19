@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Badge,
   Button,
   Card,
   CardContent,
@@ -18,12 +17,10 @@ import {
   FiPlus,
   FiUsers,
   LuBuilding2,
-  StatusBadge,
-  UrgencyBadge,
 } from "@/components/ui";
 import { apiGet } from "@/lib/api/client";
 import type { PropertyItem, RequestItem, SubscriptionStatus, UnitItem, UserItem, VendorItem } from "@/lib/api/types";
-import type { RequestStatus } from "@/lib/design-system";
+import { statusTokens, urgencyTokens, type RequestStatus, type UrgencyLevel } from "@/lib/design-system";
 
 type DashboardData = {
   properties: PropertyItem[];
@@ -37,14 +34,6 @@ type DashboardData = {
 type LoadState = "idle" | "loading" | "ready" | "error";
 
 const requestStatuses: RequestStatus[] = ["NEW", "ASSIGNED", "IN_PROGRESS", "DONE", "VERIFIED"];
-
-const statusLabels: Record<RequestStatus, string> = {
-  ASSIGNED: "Assigned",
-  DONE: "Done",
-  IN_PROGRESS: "In progress",
-  NEW: "New",
-  VERIFIED: "Verified",
-};
 
 function formatDate(value?: string) {
   if (!value) {
@@ -73,6 +62,28 @@ function daysSince(value?: string) {
   }
 
   return Math.floor((Date.now() - new Date(value).getTime()) / 86400000);
+}
+
+function StatusText({ status }: { status: RequestStatus }) {
+  const token = statusTokens[status];
+
+  return (
+    <span className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: token.foreground }}>
+      <span className="size-2 rounded-full" style={{ backgroundColor: token.foreground }} />
+      {token.label}
+    </span>
+  );
+}
+
+function UrgencyText({ urgency }: { urgency: UrgencyLevel }) {
+  const token = urgencyTokens[urgency];
+
+  return (
+    <span className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: token.foreground }}>
+      <span className="size-2 rounded-full" style={{ backgroundColor: token.foreground }} />
+      {token.label}
+    </span>
+  );
 }
 
 function MetricTile({
@@ -144,7 +155,11 @@ export function LandlordDashboard() {
   };
 
   useEffect(() => {
-    void loadDashboard();
+    const loadTimer = window.setTimeout(() => {
+      void loadDashboard();
+    }, 0);
+
+    return () => window.clearTimeout(loadTimer);
   }, []);
 
   const summary = useMemo(() => {
@@ -247,8 +262,7 @@ export function LandlordDashboard() {
                 <div className="grid gap-2" key={status}>
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <StatusBadge status={status} />
-                      <span className="text-sm font-semibold text-text-primary">{statusLabels[status]}</span>
+                      <StatusText status={status} />
                     </div>
                     <span className="text-sm font-bold text-text-primary">{count}</span>
                   </div>
@@ -316,10 +330,10 @@ export function LandlordDashboard() {
                       <td className="px-5 py-4 text-text-secondary">{request.propertyName || "Unassigned"}</td>
                       <td className="px-5 py-4 text-text-secondary">{request.unitNumber || "-"}</td>
                       <td className="px-5 py-4">
-                        <UrgencyBadge urgency={request.urgency} />
+                        <UrgencyText urgency={request.urgency} />
                       </td>
                       <td className="px-5 py-4">
-                        <StatusBadge status={request.status} />
+                        <StatusText status={request.status} />
                       </td>
                       <td className="px-5 py-4 text-text-secondary">{formatDate(request.createdAt)}</td>
                     </tr>

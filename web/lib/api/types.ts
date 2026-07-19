@@ -48,7 +48,11 @@ export type UnitItem = {
 
 export type VendorItem = {
   _id: string;
-  userId?: string;
+  userId?: string | {
+    _id?: string;
+    email?: string;
+    name?: string;
+  };
   name?: string;
   email?: string;
   services?: string[];
