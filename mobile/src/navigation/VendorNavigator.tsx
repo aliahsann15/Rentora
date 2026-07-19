@@ -69,7 +69,7 @@ export const VendorNavigator = () => {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarIcon: ({ color, size }) => {
           const iconName = tabIcons[route.name as keyof VendorTabParamList] || 'help-outline'
-          return <Ionicons name={iconName} size={size} color={color} />
+          return <Ionicons name={iconName} size={22} color={color} />
         }
       })}
     >

@@ -58,14 +58,14 @@ export const defaultTabOptions: BottomTabNavigationOptions = {
     backgroundColor: colors.surface,
     borderTopColor: colors.divider,
     borderTopWidth: 1,
-    height: 78,
-    paddingBottom: 18,
-    paddingTop: 6
+    height: 72,
+    paddingBottom: 14,
+    paddingTop: 4
   },
   tabBarLabelStyle: {
     fontFamily: 'Inter_500Medium',
-    fontSize: 11,
-    marginTop: 2
+    fontSize: 10,
+    marginTop: 0
   }
 }
 
@@ -93,7 +93,7 @@ export const createTabScreenOptions = (
 ): BottomTabNavigationOptions => ({
   ...defaultTabOptions,
   title: label,
-  tabBarIcon: ({ color }) => <Ionicons name={iconName as any} size={24} color={color} />,
+  tabBarIcon: ({ color }) => <Ionicons name={iconName as any} size={22} color={color} />,
   tabBarBadge: badgeCount && badgeCount > 0 ? badgeCount : undefined,
   tabBarActiveTintColor: accentColor,
   tabBarInactiveTintColor: colors.textMuted

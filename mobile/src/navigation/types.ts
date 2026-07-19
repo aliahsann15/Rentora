@@ -40,7 +40,7 @@ export type AuthStackParamList = {
   Register: undefined
   ForgotPassword: undefined
   ResetPassword: { token?: string } | undefined
-  InviteRegistration: { token: string }
+  InviteRegistration: { token: string; organizationName?: string }
 }
 
 export type AuthStackScreenProps<T extends keyof AuthStackParamList> = NativeStackScreenProps<

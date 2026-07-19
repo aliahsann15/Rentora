@@ -125,12 +125,13 @@ export const validateInvite = createAsyncThunk(
 
 export const registerFromInvite = createAsyncThunk(
   'auth/registerFromInvite',
-  async (payload: { token: string; name: string; password: string }, { rejectWithValue }) => {
+  async (payload: { token: string; name: string; password: string; phone?: string }, { rejectWithValue }) => {
     try {
       const response = await api.post<AuthResponse>('/invites/accept', {
         token: payload.token,
         name: payload.name,
-        password: payload.password
+        password: payload.password,
+        phone: payload.phone
       })
       await setTokens(response.data.accessToken, response.data.refreshToken)
       return response.data.user
