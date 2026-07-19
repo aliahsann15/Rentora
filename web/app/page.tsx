@@ -1,65 +1,151 @@
-import Image from "next/image";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  MetricCard,
+  PageHeader,
+  PageShell,
+  RoleBadge,
+  SectionGrid,
+  StatusBadge,
+  TextArea,
+  TextField,
+  UrgencyBadge,
+} from "@/components/ui";
+
+const palette = [
+  ["Primary", "bg-primary"],
+  ["Primary Soft", "bg-primary-soft"],
+  ["Tenant", "bg-tenant"],
+  ["Vendor", "bg-vendor"],
+  ["Success", "bg-success"],
+  ["Warning", "bg-warning"],
+  ["Danger", "bg-danger"],
+  ["Surface", "bg-surface"],
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <PageShell>
+      <PageHeader
+        actions={
+          <>
+            <Button variant="secondary">Secondary</Button>
+            <Button>Primary action</Button>
+          </>
+        }
+        eyebrow="Rentora Web"
+        subtitle="A Next.js design-system foundation for the desktop command center experience."
+        title="Design System Preview"
+      />
+
+      <SectionGrid>
+        <div className="lg:col-span-8">
+          <Card elevated>
+            <CardHeader
+              action={
+                <div className="flex items-center gap-2">
+                  <StatusBadge status="IN_PROGRESS" />
+                  <UrgencyBadge urgency="HIGH" />
+                </div>
+              }
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <CardTitle>Request workspace pattern</CardTitle>
+              <CardDescription>
+                Desktop screens should use dense, scannable panels with a clear action edge.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-5">
+              <div className="grid gap-4 md:grid-cols-3">
+                <MetricCard label="Open requests" value="18" helper="6 unassigned" tone="primary" />
+                <MetricCard label="Vacant units" value="4" helper="Across 2 properties" tone="warning" />
+                <MetricCard label="Verified" value="31" helper="This month" tone="success" />
+              </div>
+
+              <div className="overflow-hidden rounded-md border border-border">
+                <div className="grid grid-cols-[1.4fr_1fr_1fr_auto] gap-4 border-b border-divider bg-surface-muted px-4 py-3 text-xs font-bold uppercase text-text-muted">
+                  <span>Request</span>
+                  <span>Property</span>
+                  <span>Role</span>
+                  <span>Status</span>
+                </div>
+                {[
+                  ["Kitchen sink leak", "Maple Court", "TENANT", "NEW"],
+                  ["Bedroom AC not cooling", "Maple Court", "VENDOR", "IN_PROGRESS"],
+                  ["Hallway light flicker", "Northline Flats", "LANDLORD", "ASSIGNED"],
+                ].map(([title, property, role, status]) => (
+                  <div
+                    className="grid grid-cols-[1.4fr_1fr_1fr_auto] items-center gap-4 border-b border-divider px-4 py-3 last:border-b-0"
+                    key={title}
+                  >
+                    <span className="font-semibold text-text-primary">{title}</span>
+                    <span className="text-sm text-text-secondary">{property}</span>
+                    <RoleBadge role={role as "LANDLORD" | "TENANT" | "VENDOR"} />
+                    <StatusBadge status={status as "NEW" | "ASSIGNED" | "IN_PROGRESS"} />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        <aside className="grid gap-4 lg:col-span-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Core controls</CardTitle>
+              <CardDescription>Buttons, badges, and fields inherit Rentora tokens.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm">Save</Button>
+                <Button size="sm" variant="secondary">
+                  Filter
+                </Button>
+                <Button size="sm" variant="ghost">
+                  Dismiss
+                </Button>
+                <Button size="sm" variant="danger">
+                  Delete
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Badge tone="primary">Property Manager</Badge>
+                <Badge tone="tenant">Tenant</Badge>
+                <Badge tone="vendor">Vendor</Badge>
+                <Badge tone="neutral">Draft</Badge>
+              </div>
+
+              <Field label="Email">
+                <TextField placeholder="manager@rentora.com" type="email" />
+              </Field>
+              <Field label="Internal note" hint="Notes are private to managers for now.">
+                <TextArea placeholder="Add request context..." />
+              </Field>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Palette</CardTitle>
+              <CardDescription>Shared mobile tokens, tuned for a desktop shell.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3">
+              {palette.map(([label, className]) => (
+                <div className="rounded-sm border border-border bg-surface p-2" key={label}>
+                  <div className={["h-10 rounded-sm border border-divider", className].join(" ")} />
+                  <p className="mt-2 text-xs font-semibold text-text-secondary">{label}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </aside>
+      </SectionGrid>
+    </PageShell>
   );
 }

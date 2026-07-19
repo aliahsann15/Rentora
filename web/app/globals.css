@@ -1,26 +1,153 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --rentora-primary: #3e54d3;
+  --rentora-primary-light: #6b78f6;
+  --rentora-primary-soft: #eef0ff;
+  --rentora-primary-dark: #2e39a8;
+
+  --rentora-secondary: #6c74a7;
+  --rentora-secondary-light: #8f95c6;
+  --rentora-secondary-soft: #f0f1f8;
+
+  --rentora-tertiary: #a44400;
+  --rentora-tertiary-light: #c86a2b;
+  --rentora-tertiary-soft: #fff4ea;
+
+  --rentora-success: #10b981;
+  --rentora-success-soft: #ecfdf5;
+  --rentora-warning: #f59e0b;
+  --rentora-warning-soft: #fffbeb;
+  --rentora-danger: #dc2626;
+  --rentora-danger-soft: #fef2f2;
+
+  --rentora-background: #f3f4f8;
+  --rentora-background-dark: #1f2024;
+  --rentora-surface: #ffffff;
+  --rentora-surface-muted: #f8f9fc;
+
+  --rentora-text-primary: #0f172a;
+  --rentora-text-secondary: #475569;
+  --rentora-text-muted: #94a3b8;
+
+  --rentora-border: #e2e6f0;
+  --rentora-divider: #eaedf6;
+
+  --rentora-tenant-accent: #14b8a6;
+  --rentora-vendor-accent: #6c74a7;
+
+  --rentora-radius-sm: 8px;
+  --rentora-radius-md: 12px;
+  --rentora-radius-lg: 16px;
+
+  --rentora-shadow-card: 0 10px 28px rgb(15 23 42 / 7%);
+  --rentora-shadow-panel: 0 20px 60px rgb(15 23 42 / 10%);
+
+  --background: var(--rentora-background);
+  --foreground: var(--rentora-text-primary);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--rentora-primary);
+  --color-primary-light: var(--rentora-primary-light);
+  --color-primary-soft: var(--rentora-primary-soft);
+  --color-primary-dark: var(--rentora-primary-dark);
+  --color-secondary: var(--rentora-secondary);
+  --color-secondary-soft: var(--rentora-secondary-soft);
+  --color-tertiary: var(--rentora-tertiary);
+  --color-tertiary-soft: var(--rentora-tertiary-soft);
+  --color-success: var(--rentora-success);
+  --color-success-soft: var(--rentora-success-soft);
+  --color-warning: var(--rentora-warning);
+  --color-warning-soft: var(--rentora-warning-soft);
+  --color-danger: var(--rentora-danger);
+  --color-danger-soft: var(--rentora-danger-soft);
+  --color-surface: var(--rentora-surface);
+  --color-surface-muted: var(--rentora-surface-muted);
+  --color-text-primary: var(--rentora-text-primary);
+  --color-text-secondary: var(--rentora-text-secondary);
+  --color-text-muted: var(--rentora-text-muted);
+  --color-border: var(--rentora-border);
+  --color-divider: var(--rentora-divider);
+  --color-tenant: var(--rentora-tenant-accent);
+  --color-vendor: var(--rentora-vendor-accent);
+  --font-sans: var(--font-inter);
+  --radius-sm: var(--rentora-radius-sm);
+  --radius-md: var(--rentora-radius-md);
+  --radius-lg: var(--rentora-radius-lg);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--rentora-background);
+  color: var(--rentora-text-primary);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgb(238 240 255 / 70%) 0%, rgb(243 244 248 / 0%) 34%),
+    var(--rentora-background);
+  color: var(--rentora-text-primary);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--rentora-primary-soft);
+  color: var(--rentora-primary-dark);
+}
+
+:focus-visible {
+  outline: 3px solid rgb(107 120 246 / 42%);
+  outline-offset: 2px;
+}
+
+.rentora-card {
+  border: 1px solid var(--rentora-border);
+  border-radius: var(--rentora-radius-md);
+  background: var(--rentora-surface);
+  box-shadow: var(--rentora-shadow-card);
+}
+
+.rentora-panel {
+  border: 1px solid var(--rentora-border);
+  border-radius: var(--rentora-radius-lg);
+  background: var(--rentora-surface);
+  box-shadow: var(--rentora-shadow-panel);
+}
+
+.rentora-grid-surface {
+  background-image:
+    linear-gradient(var(--rentora-divider) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rentora-divider) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
 }
