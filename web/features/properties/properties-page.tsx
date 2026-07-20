@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Dropdown,
   FiAlertCircle,
   FiCheck,
   FiEdit3,
@@ -770,21 +771,15 @@ export function PropertiesPage() {
               <p className="mt-1 text-sm text-text-secondary">Select the property this unit belongs to.</p>
             </div>
             <form className="grid gap-4 p-5" onSubmit={submitUnit}>
-              <label className="grid gap-2">
-                <span className="text-xs font-semibold text-text-primary">Property</span>
-                <select
-                  className="h-11 rounded-md border border-border bg-surface px-3 text-sm font-medium text-text-primary shadow-sm outline-none transition hover:border-text-muted focus:border-text-primary"
-                  onChange={(event) => updateUnitForm("propertyId", event.target.value)}
-                  value={unitForm.propertyId}
-                >
-                  <option value="">Select property</option>
-                  {properties.map((property) => (
-                    <option key={property._id} value={property._id}>
-                      {property.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <Dropdown
+                label="Property"
+                onChange={(value) => updateUnitForm("propertyId", value)}
+                options={[
+                  { label: "Select property", value: "" },
+                  ...properties.map((property) => ({ label: property.name, value: property._id })),
+                ]}
+                value={unitForm.propertyId}
+              />
               <label className="grid gap-2">
                 <span className="text-xs font-semibold text-text-primary">Unit number</span>
                 <TextField autoFocus onChange={(event) => updateUnitForm("unitNumber", event.target.value)} value={unitForm.unitNumber} />
@@ -798,17 +793,15 @@ export function PropertiesPage() {
                   value={unitForm.rentAmount}
                 />
               </label>
-              <label className="grid gap-2">
-                <span className="text-xs font-semibold text-text-primary">Status</span>
-                <select
-                  className="h-11 rounded-md border border-border bg-surface px-3 text-sm font-medium text-text-primary shadow-sm outline-none transition hover:border-text-muted focus:border-text-primary"
-                  onChange={(event) => updateUnitForm("status", event.target.value)}
-                  value={unitForm.status}
-                >
-                  <option value="VACANT">Vacant</option>
-                  <option value="OCCUPIED">Occupied</option>
-                </select>
-              </label>
+              <Dropdown
+                label="Status"
+                onChange={(value) => updateUnitForm("status", value)}
+                options={[
+                  { label: "Vacant", value: "VACANT" },
+                  { label: "Occupied", value: "OCCUPIED" },
+                ]}
+                value={unitForm.status}
+              />
               <div className="flex justify-end gap-2 border-t border-divider pt-4">
                 <Button onClick={resetUnitForm} type="button" variant="secondary">
                   Cancel

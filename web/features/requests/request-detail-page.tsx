@@ -9,9 +9,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Dropdown,
   FiAlertCircle,
   FiCheck,
-  FiChevronDown,
   FiChevronLeft,
 } from "@/components/ui";
 import { apiGet, apiPatch } from "@/lib/api/client";
@@ -102,38 +102,6 @@ function getVendorEmail(vendor: VendorItem) {
   }
 
   return "";
-}
-
-function SelectField({
-  label,
-  onChange,
-  value,
-  children,
-}: {
-  children: React.ReactNode;
-  label: string;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  return (
-    <label className="grid gap-2">
-      <span className="text-xs font-semibold text-text-primary">{label}</span>
-      <span className="relative">
-        <select
-          className="h-11 w-full appearance-none rounded-md border border-border bg-surface px-3 pr-9 text-sm font-medium text-text-primary shadow-sm outline-none transition hover:border-text-muted focus:border-text-primary"
-          onChange={(event) => onChange(event.target.value)}
-          value={value}
-        >
-          {children}
-        </select>
-        <FiChevronDown
-          aria-hidden="true"
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
-          size={16}
-        />
-      </span>
-    </label>
-  );
 }
 
 function InfoRow({ label, value }: { label: string; value?: string }) {
@@ -352,15 +320,18 @@ export function RequestDetailPage({ requestId }: { requestId: string }) {
               </CardHeader>
               <CardContent className="grid gap-5">
                 <div className="grid gap-3">
-                  <SelectField label="Assign vendor" onChange={setAssigningVendorId} value={assigningVendorId}>
-                    <option value="">Select vendor</option>
-                    {vendors.map((vendor) => (
-                      <option key={vendor._id} value={vendor._id}>
-                        {getVendorName(vendor)}
-                        {getVendorEmail(vendor) ? ` - ${getVendorEmail(vendor)}` : ""}
-                      </option>
-                    ))}
-                  </SelectField>
+                  <Dropdown
+                    label="Assign vendor"
+                    onChange={setAssigningVendorId}
+                    options={[
+                      { label: "Select vendor", value: "" },
+                      ...vendors.map((vendor) => ({
+                        label: `${getVendorName(vendor)}${getVendorEmail(vendor) ? ` - ${getVendorEmail(vendor)}` : ""}`,
+                        value: vendor._id,
+                      })),
+                    ]}
+                    value={assigningVendorId}
+                  />
                   <Button
                     disabled={!assigningVendorId || request.status !== "NEW"}
                     isLoading={updatingAction === "assign"}

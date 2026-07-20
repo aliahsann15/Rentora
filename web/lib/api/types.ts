@@ -52,9 +52,13 @@ export type VendorItem = {
     _id?: string;
     email?: string;
     name?: string;
+    phone?: string;
+    avatar?: string;
+    isActive?: boolean;
   };
   name?: string;
   email?: string;
+  notes?: string;
   services?: string[];
   rating?: number;
   totalJobs?: number;
@@ -67,8 +71,13 @@ export type UserItem = {
   name: string;
   email: string;
   role: UserRole;
+  avatar?: string;
+  phone?: string;
+  isActive?: boolean;
   assignedUnitNumber?: string | null;
   createdAt?: string;
+  updatedAt?: string;
+  vendorServices?: string[];
 };
 
 export type SubscriptionStatus = {

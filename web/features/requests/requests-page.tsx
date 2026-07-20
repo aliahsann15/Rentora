@@ -9,7 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  FiChevronDown,
+  Dropdown,
   FiEdit3,
   FiFilter,
   FiSearch,
@@ -121,38 +121,6 @@ function isWithinDateRange(request: RequestItem, dateFrom: string, dateTo: strin
   }
 
   return true;
-}
-
-function SelectField({
-  label,
-  onChange,
-  value,
-  children,
-}: {
-  children: React.ReactNode;
-  label: string;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  return (
-    <label className="grid gap-2">
-      <span className="text-xs font-semibold text-text-primary">{label}</span>
-      <span className="relative">
-        <select
-          className="h-11 w-full appearance-none rounded-md border border-border bg-surface px-3 pr-9 text-sm font-medium text-text-primary shadow-sm outline-none transition hover:border-text-muted focus:border-text-primary"
-          onChange={(event) => onChange(event.target.value)}
-          value={value}
-        >
-          {children}
-        </select>
-        <FiChevronDown
-          aria-hidden="true"
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
-          size={16}
-        />
-      </span>
-    </label>
-  );
 }
 
 export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
@@ -314,42 +282,48 @@ export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
               </span>
             </label>
 
-            <SelectField label="Status" onChange={(value) => updateFilter("status", value)} value={filters.status}>
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {status === "ALL" ? "All statuses" : formatLabel(status)}
-                </option>
-              ))}
-            </SelectField>
+            <Dropdown
+              label="Status"
+              onChange={(value) => updateFilter("status", value)}
+              options={statuses.map((status) => ({
+                label: status === "ALL" ? "All statuses" : formatLabel(status),
+                value: status,
+              }))}
+              value={filters.status}
+            />
 
-            <SelectField label="Urgency" onChange={(value) => updateFilter("urgency", value)} value={filters.urgency}>
-              {urgencies.map((urgency) => (
-                <option key={urgency} value={urgency}>
-                  {urgency === "ALL" ? "All urgency" : formatLabel(urgency)}
-                </option>
-              ))}
-            </SelectField>
+            <Dropdown
+              label="Urgency"
+              onChange={(value) => updateFilter("urgency", value)}
+              options={urgencies.map((urgency) => ({
+                label: urgency === "ALL" ? "All urgency" : formatLabel(urgency),
+                value: urgency,
+              }))}
+              value={filters.urgency}
+            />
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[1fr_1fr_0.65fr_0.65fr_auto]">
-            <SelectField label="Property" onChange={(value) => updateFilter("propertyId", value)} value={filters.propertyId}>
-              <option value="ALL">All properties</option>
-              {properties.map((property) => (
-                <option key={property._id} value={property._id}>
-                  {property.name}
-                </option>
-              ))}
-            </SelectField>
+            <Dropdown
+              label="Property"
+              onChange={(value) => updateFilter("propertyId", value)}
+              options={[
+                { label: "All properties", value: "ALL" },
+                ...properties.map((property) => ({ label: property.name, value: property._id })),
+              ]}
+              value={filters.propertyId}
+            />
 
-            <SelectField label="Vendor" onChange={(value) => updateFilter("vendorId", value)} value={filters.vendorId}>
-              <option value="ALL">All vendors</option>
-              <option value="UNASSIGNED">Unassigned</option>
-              {vendors.map((vendor) => (
-                <option key={vendor._id} value={vendor._id}>
-                  {getVendorName(vendor)}
-                </option>
-              ))}
-            </SelectField>
+            <Dropdown
+              label="Vendor"
+              onChange={(value) => updateFilter("vendorId", value)}
+              options={[
+                { label: "All vendors", value: "ALL" },
+                { label: "Unassigned", value: "UNASSIGNED" },
+                ...vendors.map((vendor) => ({ label: getVendorName(vendor), value: vendor._id })),
+              ]}
+              value={filters.vendorId}
+            />
 
             <label className="grid gap-2">
               <span className="text-xs font-semibold text-text-primary">From</span>
