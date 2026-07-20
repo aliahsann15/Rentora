@@ -167,6 +167,7 @@ const createSeedData = async () => {
     bcrypt.hash(demo.tenant.password, 12),
     bcrypt.hash(demo.vendor.password, 12)
   ])
+  const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 
   const landlord = await User.create({
     name: demo.landlord.name,
@@ -186,7 +187,7 @@ const createSeedData = async () => {
     subscriptionStatus: 'TRIALING',
     planType: 'TRIAL',
     unitLimit: 20,
-    trialEndsAt: new Date('2026-06-07T23:59:59.000Z'),
+    trialEndsAt,
     isActive: true
   })
 

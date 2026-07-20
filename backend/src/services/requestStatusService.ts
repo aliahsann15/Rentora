@@ -17,6 +17,14 @@ const allowedTransitions: Record<RequestStatus, RequestStatus[]> = {
   VERIFIED: []
 }
 
+const vendorAllowedTransitions: Record<RequestStatus, RequestStatus[]> = {
+  NEW: [],
+  ASSIGNED: ['IN_PROGRESS'],
+  IN_PROGRESS: ['DONE'],
+  DONE: [],
+  VERIFIED: []
+}
+
 const ensureSameOrganization = (currentUser: CurrentUser, organizationId: string): void => {
   if (currentUser.organizationId !== organizationId) {
     throw new Error('Cross-organization access is forbidden')
@@ -149,6 +157,14 @@ export const updateStatusWithRules = async (
     if (!request.vendorId || request.vendorId.toString() !== vendorId) {
       throw new Error('Vendor can only update assigned requests')
     }
+
+    if (!vendorAllowedTransitions[request.status].includes(nextStatus)) {
+      throw new Error(`Vendor cannot transition ${request.status} -> ${nextStatus}`)
+    }
+  }
+
+  if (nextStatus === 'VERIFIED' && currentUser.role !== 'LANDLORD') {
+    throw new Error('Only landlord can verify requests')
   }
 
   if (!allowedTransitions[request.status].includes(nextStatus)) {

@@ -3,6 +3,7 @@ import type { AuthUser } from "./types";
 export const ACCESS_TOKEN_KEY = "rentora_access_token";
 export const REFRESH_TOKEN_KEY = "rentora_refresh_token";
 export const AUTH_USER_KEY = "rentora_auth_user";
+export const AUTH_USER_CHANGED_EVENT = "rentora-auth-user-changed";
 
 type AuthStorage = Pick<Storage, "getItem" | "removeItem" | "setItem">;
 
@@ -33,7 +34,7 @@ function getSessionStorageForKey(key: string): AuthStorage | null {
 }
 
 function notifyAuthUserChanged() {
-  window.dispatchEvent(new Event("rentora-auth-user-changed"));
+  window.dispatchEvent(new Event(AUTH_USER_CHANGED_EVENT));
 }
 
 export function saveAuthSession({
@@ -66,7 +67,7 @@ export function getRefreshToken(): string | null {
 }
 
 export function getAuthUser(): AuthUser | null {
-  const rawUser = getStoredValue(AUTH_USER_KEY);
+  const rawUser = getAuthUserSnapshot();
 
   if (!rawUser) {
     return null;
@@ -77,6 +78,26 @@ export function getAuthUser(): AuthUser | null {
   } catch {
     return null;
   }
+}
+
+export function getAuthUserSnapshot(): string | null {
+  return getStoredValue(AUTH_USER_KEY);
+}
+
+export function subscribeToAuthUserChanges(onStoreChange: () => void) {
+  const handleStorageChange = (event: StorageEvent) => {
+    if ([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, AUTH_USER_KEY].includes(event.key || "")) {
+      onStoreChange();
+    }
+  };
+
+  window.addEventListener(AUTH_USER_CHANGED_EVENT, onStoreChange);
+  window.addEventListener("storage", handleStorageChange);
+
+  return () => {
+    window.removeEventListener(AUTH_USER_CHANGED_EVENT, onStoreChange);
+    window.removeEventListener("storage", handleStorageChange);
+  };
 }
 
 export function updateAuthUserSession(updates: Partial<AuthUser>) {
