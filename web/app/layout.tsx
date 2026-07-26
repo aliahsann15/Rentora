@@ -26,7 +26,13 @@ export default function RootLayout({
       <head>
         <link rel="preload" href="/bg.png" as="image" />
       </head>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {/* <Header /> */}
+        <main>
+          {children}
+        </main>
+
+      </body>
     </html>
   );
 }

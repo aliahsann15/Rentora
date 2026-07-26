@@ -15,7 +15,7 @@ export default function InvitePage() {
       footer={
         <>
           Already registered?{" "}
-          <Link className="font-semibold text-primary hover:text-primary-dark" href="/">
+          <Link className="font-semibold text-primary hover:text-primary-dark" href="/login">
             Sign in
           </Link>
         </>

@@ -464,7 +464,7 @@ export function SettingsPage() {
       // Local cleanup still completes sign out if the refresh token is already invalid.
     } finally {
       clearAuthSession();
-      window.location.assign("/");
+      window.location.assign("/login");
     }
   };
 

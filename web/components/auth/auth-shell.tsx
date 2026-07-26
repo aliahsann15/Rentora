@@ -15,7 +15,7 @@ export function AuthShell({ children, footer, subtitle, title }: AuthShellProps)
       className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-5 py-10 text-text-primary"
       style={{
         backgroundImage:
-          "linear-gradient(rgb(243 244 248 / 86%), rgb(243 244 248 / 86%)), url('/bg.png')",
+          "linear-gradient(rgb(243 244 248 / 86%), rgb(243 244 248 / 86%)), url('/images/bg.png')",
         backgroundPosition: "center",
         backgroundSize: "cover",
       }}
@@ -28,13 +28,13 @@ export function AuthShell({ children, footer, subtitle, title }: AuthShellProps)
               className="h-auto w-40"
               height={959}
               priority
-              src="/logo.png"
+              src="/logo/logo.png"
               width={3867}
             />
           </Link>
         </div>
 
-        <div className="rounded-lg border border-border bg-white/95 p-6 shadow-[var(--rentora-shadow-card)] backdrop-blur-sm sm:p-8">
+        <div className="rounded-lg border border-border bg-white/95 p-6 shadow-(--rentora-shadow-card) backdrop-blur-sm sm:p-8">
           <div className="mb-7 text-center">
             <h1 className="text-2xl font-bold text-text-primary">{title}</h1>
             <p className="mt-2 text-sm text-text-secondary">{subtitle}</p>

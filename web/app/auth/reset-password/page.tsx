@@ -6,7 +6,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthShell
       footer={
-        <Link className="font-semibold text-primary hover:text-primary-dark" href="/">
+        <Link className="font-semibold text-primary hover:text-primary-dark" href="/login">
           Back to sign in
         </Link>
       }

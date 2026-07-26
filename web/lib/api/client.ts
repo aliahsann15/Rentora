@@ -19,7 +19,7 @@ export async function apiGet<TResponse>(path: string): Promise<TResponse> {
 
   if (response.status === 401) {
     clearAuthSession();
-    window.location.assign("/");
+    window.location.assign("/login");
     throw new Error("Your session expired. Please sign in again.");
   }
 
@@ -49,7 +49,7 @@ export async function apiPatch<TResponse, TPayload extends object>(path: string,
 
   if (response.status === 401) {
     clearAuthSession();
-    window.location.assign("/");
+    window.location.assign("/login");
     throw new Error("Your session expired. Please sign in again.");
   }
 
@@ -79,7 +79,7 @@ export async function apiPost<TResponse, TPayload extends object>(path: string, 
 
   if (response.status === 401) {
     clearAuthSession();
-    window.location.assign("/");
+    window.location.assign("/login");
     throw new Error("Your session expired. Please sign in again.");
   }
 
@@ -105,7 +105,7 @@ export async function apiDelete<TResponse>(path: string): Promise<TResponse> {
 
   if (response.status === 401) {
     clearAuthSession();
-    window.location.assign("/");
+    window.location.assign("/login");
     throw new Error("Your session expired. Please sign in again.");
   }
 

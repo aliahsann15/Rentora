@@ -27,7 +27,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const signOut = () => {
     clearAuthSession();
-    window.location.assign("/");
+    window.location.assign("/login");
   };
 
   return (

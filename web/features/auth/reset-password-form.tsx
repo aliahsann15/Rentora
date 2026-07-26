@@ -132,7 +132,7 @@ export function ResetPasswordForm({ initialToken = "" }: ResetPasswordFormProps)
       {message ? (
         <div className="rounded-md border border-success bg-success-soft px-3 py-2 text-sm font-medium text-success">
           {message}{" "}
-          <Link className="font-semibold underline underline-offset-2" href="/">
+          <Link className="font-semibold underline underline-offset-2" href="/login">
             Sign in
           </Link>
         </div>
