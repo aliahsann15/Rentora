@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit'
 import { apiRouter } from './routes'
 import { errorHandler } from './middlewares/errorHandler'
 import { webhooksRoutes } from './routes/webhooksRoutes'
+import { mediaRoot } from './utils/mediaStorage'
 
 const app: Application = express()
 const isProduction = process.env.NODE_ENV === 'production'
@@ -75,13 +76,18 @@ const mongoSanitizeMiddleware = (req: Request, _res: Response, next: () => void)
 
 app.use('/api/webhooks', webhooksRoutes)
 app.use(cors(corsOptions))
-app.use(helmet())
+app.use(helmet({
+  crossOriginResourcePolicy: {
+    policy: 'cross-origin'
+  }
+}))
 app.use(globalRateLimiter)
 app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }))
 app.use(express.urlencoded({ extended: true, limit: process.env.URL_ENCODED_LIMIT || '1mb' }))
 app.use(mongoSanitizeMiddleware)
 app.use(cookieParser())
 app.use(morgan(isProduction ? 'combined' : 'dev'))
+app.use('/media', express.static(mediaRoot))
 app.use('/api', apiRouter)
 
 app.get('/', (req: Request, res: Response) => {

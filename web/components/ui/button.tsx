@@ -14,7 +14,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     "bg-primary text-white shadow-[0_12px_24px_rgb(62_84_211/20%)] hover:bg-primary-dark",
   secondary:
-    "border border-border bg-surface text-primary hover:border-primary-light hover:bg-primary-soft",
+    "border border-primary-light bg-primary-soft text-primary hover:border-primary hover:bg-[#e3e7ff]",
   danger: "bg-danger text-white hover:bg-red-700",
   ghost: "text-text-secondary hover:bg-surface-muted hover:text-text-primary",
 };

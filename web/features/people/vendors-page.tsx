@@ -17,6 +17,7 @@ import {
   TextArea,
   TextField,
 } from "@/components/ui";
+import { useToastMessages } from "@/components/app/toast-provider";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/client";
 import type { UserItem, VendorItem } from "@/lib/api/types";
 import { type AuthFieldErrors, validateEmail, validateOptionalPhone, validateRequired } from "@/lib/auth/validation";
@@ -102,6 +103,8 @@ export function VendorsPage() {
   const [vendorEditForm, setVendorEditForm] = useState<VendorEditForm>(emptyVendorEditForm);
   const [vendorForm, setVendorForm] = useState<VendorForm>(emptyVendorForm);
   const [vendors, setVendors] = useState<VendorItem[]>([]);
+
+  useToastMessages({ error, success });
 
   const loadVendors = async () => {
     setLoadState("loading");
@@ -326,18 +329,6 @@ export function VendorsPage() {
           Add vendor
         </Button>
       </div>
-
-      {success ? (
-        <div className="rounded-md border border-success bg-success-soft px-4 py-3 text-sm font-medium text-success">
-          {success}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-          {error}
-        </div>
-      ) : null}
 
       <Card elevated>
         <CardHeader>

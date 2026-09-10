@@ -24,7 +24,7 @@ export default function RootLayout({
       className={`${inter.variable} h-full antialiased`}
     >
       <head>
-        <link rel="preload" href="/bg.png" as="image" />
+        <link rel="preload" href="/images/bg.png" as="image" />
       </head>
       <body className="min-h-full">
         {/* <Header /> */}

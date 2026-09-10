@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useToastMessages } from "@/components/app/toast-provider";
 import {
   Button,
   Card,
@@ -15,7 +16,10 @@ import {
   FiChevronLeft,
 } from "@/components/ui";
 import { apiGet, apiPatch } from "@/lib/api/client";
+import { API_BASE_URL } from "@/lib/api/config";
 import type { RequestItem, VendorItem } from "@/lib/api/types";
+import { getAuthUser } from "@/lib/auth/storage";
+import type { AuthUser } from "@/lib/auth/types";
 import { statusTokens, urgencyTokens, type RequestStatus, type UrgencyLevel } from "@/lib/design-system";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
@@ -48,6 +52,10 @@ function formatLabel(value: string) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function resolveMediaUrl(value: string) {
+  return value.startsWith("/media/") ? `${API_BASE_URL.replace(/\/api$/, "")}${value}` : value;
 }
 
 function StatusText({ status }: { status: RequestStatus }) {
@@ -115,14 +123,16 @@ function InfoRow({ label, value }: { label: string; value?: string }) {
 
 export function RequestDetailPage({ requestId }: { requestId: string }) {
   const [assigningVendorId, setAssigningVendorId] = useState("");
+  const [currentUser] = useState<AuthUser | null>(() => (typeof window === "undefined" ? null : getAuthUser()));
   const [error, setError] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [request, setRequest] = useState<RequestItem | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [updatingAction, setUpdatingAction] = useState<string | null>(null);
   const [vendors, setVendors] = useState<VendorItem[]>([]);
+  useToastMessages({ error, success });
 
-  const loadRequestDetail = async () => {
+  const loadRequestDetail = useCallback(async () => {
     if (!requestId) {
       setError("Request id is missing.");
       setLoadState("error");
@@ -135,7 +145,7 @@ export function RequestDetailPage({ requestId }: { requestId: string }) {
     try {
       const [requestItem, vendorItems] = await Promise.all([
         apiGet<RequestItem>(`/requests/${requestId}`),
-        apiGet<VendorItem[]>("/vendors"),
+        currentUser?.role === "LANDLORD" ? apiGet<VendorItem[]>("/vendors") : Promise.resolve([]),
       ]);
 
       setRequest(requestItem);
@@ -146,7 +156,7 @@ export function RequestDetailPage({ requestId }: { requestId: string }) {
       setError(caughtError instanceof Error ? caughtError.message : "Unable to load request.");
       setLoadState("error");
     }
-  };
+  }, [currentUser, requestId]);
 
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
@@ -154,11 +164,23 @@ export function RequestDetailPage({ requestId }: { requestId: string }) {
     }, 0);
 
     return () => window.clearTimeout(loadTimer);
-  }, [requestId]);
+  }, [loadRequestDetail]);
 
   const nextStatuses = useMemo(() => {
     return request ? allowedStatusTransitions[request.status] : [];
   }, [request]);
+
+  const availableStatusActions = useMemo<RequestStatus[]>(() => {
+    if (currentUser?.role === "LANDLORD") {
+      return ["ASSIGNED", "IN_PROGRESS", "DONE", "VERIFIED"];
+    }
+
+    if (currentUser?.role === "VENDOR") {
+      return ["IN_PROGRESS", "DONE"];
+    }
+
+    return [];
+  }, [currentUser?.role]);
 
   const runRequestAction = async (actionId: string, action: () => Promise<RequestItem>, message: string) => {
     setUpdatingAction(actionId);
@@ -233,18 +255,6 @@ export function RequestDetailPage({ requestId }: { requestId: string }) {
         </Button>
       </div>
 
-      {success ? (
-        <div className="rounded-md border border-success bg-success-soft px-4 py-3 text-sm font-medium text-success">
-          {success}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-          {error}
-        </div>
-      ) : null}
-
       {request ? (
         <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
           <Card elevated>
@@ -268,17 +278,26 @@ export function RequestDetailPage({ requestId }: { requestId: string }) {
                 <div className="grid gap-3">
                   <h2 className="text-base font-bold text-text-primary">Images</h2>
                   <div className="grid gap-3 sm:grid-cols-3">
-                    {request.images.map((image) => (
-                      <a
-                        className="aspect-video overflow-hidden rounded-md border border-border bg-surface-muted"
-                        href={image}
-                        key={image}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        <img alt={request.title} className="h-full w-full object-cover" src={image} />
-                      </a>
-                    ))}
+                    {request.images.map((image) => {
+                      const imageUrl = resolveMediaUrl(image);
+
+                      return (
+                        <a
+                          aria-label={`Open image for ${request.title}`}
+                          className="aspect-video overflow-hidden rounded-md border border-border bg-surface-muted"
+                          href={imageUrl}
+                          key={image}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="block h-full w-full bg-cover bg-center"
+                            style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})` }}
+                          />
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               ) : null}
@@ -313,13 +332,15 @@ export function RequestDetailPage({ requestId }: { requestId: string }) {
               </CardContent>
             </Card>
 
-            <Card elevated>
-              <CardHeader>
-                <CardTitle>Actions</CardTitle>
-                <CardDescription>Assign vendors and move the request through its lifecycle.</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-5">
-                <div className="grid gap-3">
+            {currentUser?.role !== "TENANT" ? (
+              <Card elevated>
+                <CardHeader>
+                  <CardTitle>Actions</CardTitle>
+                  <CardDescription>Assign vendors and move the request through its lifecycle.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-5">
+                  {currentUser?.role === "LANDLORD" ? (
+                    <div className="grid gap-3">
                   <Dropdown
                     label="Assign vendor"
                     onChange={setAssigningVendorId}
@@ -343,44 +364,50 @@ export function RequestDetailPage({ requestId }: { requestId: string }) {
                   {request.status !== "NEW" ? (
                     <p className="text-xs font-medium text-text-muted">Vendor assignment is available while a request is new.</p>
                   ) : null}
-                </div>
+                    </div>
+                  ) : null}
 
-                <div className="grid gap-2">
-                  <p className="text-xs font-semibold text-text-primary">Status actions</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["ASSIGNED", "IN_PROGRESS", "DONE"] as RequestStatus[]).map((status) => (
-                      <Button
-                        disabled={!nextStatuses.includes(status)}
-                        isLoading={updatingAction === `status-${status}`}
-                        key={status}
-                        onClick={() => updateStatus(status)}
-                        size="sm"
-                        variant="secondary"
-                      >
-                        {formatLabel(status)}
-                      </Button>
-                    ))}
-                    <Button
-                      disabled={!nextStatuses.includes("VERIFIED")}
-                      icon={<FiCheck aria-hidden="true" size={16} />}
-                      isLoading={updatingAction === "verify"}
-                      onClick={verifyRequest}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      Verify
-                    </Button>
-                  </div>
-                </div>
+                  {availableStatusActions.length ? (
+                    <div className="grid gap-2">
+                      <p className="text-xs font-semibold text-text-primary">Status actions</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {availableStatusActions.filter((status) => status !== "VERIFIED").map((status) => (
+                          <Button
+                            disabled={!nextStatuses.includes(status)}
+                            isLoading={updatingAction === `status-${status}`}
+                            key={status}
+                            onClick={() => updateStatus(status)}
+                            size="sm"
+                            variant="secondary"
+                          >
+                            {formatLabel(status)}
+                          </Button>
+                        ))}
+                        {currentUser?.role === "LANDLORD" ? (
+                          <Button
+                            disabled={!nextStatuses.includes("VERIFIED")}
+                            icon={<FiCheck aria-hidden="true" size={16} />}
+                            isLoading={updatingAction === "verify"}
+                            onClick={verifyRequest}
+                            size="sm"
+                            variant="secondary"
+                          >
+                            Verify
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
 
-                {request.vendorServices?.length ? (
-                  <div className="grid gap-2">
-                    <p className="text-xs font-semibold text-text-primary">Vendor services</p>
-                    <p className="text-sm font-medium leading-6 text-text-secondary">{request.vendorServices.join(", ")}</p>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
+                  {request.vendorServices?.length ? (
+                    <div className="grid gap-2">
+                      <p className="text-xs font-semibold text-text-primary">Vendor services</p>
+                      <p className="text-sm font-medium leading-6 text-text-secondary">{request.vendorServices.join(", ")}</p>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
           </div>
         </section>
       ) : loadState === "loading" ? (

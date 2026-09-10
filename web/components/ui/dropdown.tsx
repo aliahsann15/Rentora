@@ -67,7 +67,7 @@ export function Dropdown({
   };
 
   return (
-    <label className={["relative grid gap-2", className].join(" ")} ref={rootRef}>
+    <label className={["relative grid self-start gap-2", className].join(" ")} ref={rootRef}>
       <span className="text-xs font-semibold text-text-primary">{label}</span>
       <button
         aria-controls={dropdownId}

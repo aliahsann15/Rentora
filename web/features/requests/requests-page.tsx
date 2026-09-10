@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToastMessages } from "@/components/app/toast-provider";
 import {
   Button,
   Card,
@@ -10,14 +11,19 @@ import {
   CardHeader,
   CardTitle,
   Dropdown,
+  FiDownload,
   FiEdit3,
   FiFilter,
   FiSearch,
   TextField,
+  TextArea,
 } from "@/components/ui";
-import { apiGet } from "@/lib/api/client";
-import type { PropertyItem, RequestItem, VendorItem } from "@/lib/api/types";
+import { apiGet, apiPost } from "@/lib/api/client";
+import type { PropertyItem, RequestItem, UnitItem, UserItem, VendorItem } from "@/lib/api/types";
+import { getAuthUser } from "@/lib/auth/storage";
+import type { AuthUser } from "@/lib/auth/types";
 import { statusTokens, urgencyTokens, type RequestStatus, type UrgencyLevel } from "@/lib/design-system";
+import { showToast } from "@/lib/ui/toast";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 type StatusFilter = "ALL" | RequestStatus;
@@ -33,6 +39,21 @@ type RequestFilters = {
   vendorId: string;
 };
 
+type NewRequestForm = {
+  description: string;
+  propertyId: string;
+  title: string;
+  unitId: string;
+  urgency: UrgencyLevel;
+};
+
+type TenantAssignment = {
+  propertyId: string;
+  propertyName?: string;
+  unitId: string;
+  unitNumber: string;
+};
+
 const statuses: StatusFilter[] = ["ALL", "NEW", "ASSIGNED", "IN_PROGRESS", "DONE", "VERIFIED"];
 const urgencies: UrgencyFilter[] = ["ALL", "LOW", "MEDIUM", "HIGH"];
 
@@ -44,6 +65,14 @@ const initialFilters: RequestFilters = {
   status: "ALL",
   urgency: "ALL",
   vendorId: "ALL",
+};
+
+const emptyNewRequestForm: NewRequestForm = {
+  description: "",
+  propertyId: "",
+  title: "",
+  unitId: "",
+  urgency: "MEDIUM",
 };
 
 function formatDateTime(value?: string) {
@@ -65,6 +94,11 @@ function formatLabel(value: string) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function escapeCsvValue(value: string | undefined) {
+  const normalizedValue = value || "";
+  return `"${normalizedValue.replaceAll('"', '""')}"`;
 }
 
 function StatusText({ status }: { status: RequestStatus }) {
@@ -125,27 +159,71 @@ function isWithinDateRange(request: RequestItem, dateFrom: string, dateTo: strin
 
 export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+    return typeof window === "undefined" ? null : getAuthUser();
+  });
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<RequestFilters>(() => ({ ...initialFilters, query: initialQuery }));
+  const [isNewRequestModalOpen, setIsNewRequestModalOpen] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>("idle");
+  const [newRequestForm, setNewRequestForm] = useState<NewRequestForm>(emptyNewRequestForm);
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [tenants, setTenants] = useState<UserItem[]>([]);
+  const [units, setUnits] = useState<UnitItem[]>([]);
+  const [updatingAction, setUpdatingAction] = useState<string | null>(null);
   const [vendors, setVendors] = useState<VendorItem[]>([]);
+  useToastMessages({ error, success });
 
   const loadRequestsPage = async () => {
     setLoadState("loading");
     setError(null);
 
     try {
-      const [requestItems, propertyItems, vendorItems] = await Promise.all([
-        apiGet<RequestItem[]>("/requests"),
-        apiGet<PropertyItem[]>("/properties"),
-        apiGet<VendorItem[]>("/vendors"),
-      ]);
+      const storedUser = getAuthUser();
+      setCurrentUser(storedUser);
 
-      setRequests(requestItems);
-      setProperties(propertyItems);
-      setVendors(vendorItems);
+      if (storedUser?.role === "TENANT") {
+        const [requestItems, assignment] = await Promise.all([
+          apiGet<RequestItem[]>("/requests"),
+          apiGet<TenantAssignment>("/auth/me-assignment").catch(() => null),
+        ]);
+
+        setRequests(requestItems);
+        setProperties(
+          assignment
+            ? [{ _id: assignment.propertyId, name: assignment.propertyName || "Assigned property" }]
+            : [],
+        );
+        setUnits(
+          assignment
+            ? [{
+                _id: assignment.unitId,
+                propertyId: assignment.propertyId,
+                status: "OCCUPIED",
+                tenantId: storedUser._id,
+                unitNumber: assignment.unitNumber,
+              }]
+            : [],
+        );
+        setTenants([]);
+        setVendors([]);
+      } else {
+        const [requestItems, propertyItems, unitItems, tenantItems, vendorItems] = await Promise.all([
+          apiGet<RequestItem[]>("/requests"),
+          apiGet<PropertyItem[]>("/properties"),
+          apiGet<UnitItem[]>("/units"),
+          apiGet<UserItem[]>("/users?role=TENANT"),
+          apiGet<VendorItem[]>("/vendors"),
+        ]);
+
+        setRequests(requestItems);
+        setProperties(propertyItems);
+        setUnits(unitItems);
+        setTenants(tenantItems);
+        setVendors(vendorItems);
+      }
       setLoadState("ready");
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Unable to load requests.");
@@ -208,6 +286,150 @@ export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
     setFilters(initialFilters);
   };
 
+  const requestableUnits = useMemo(() => {
+    return units.filter((unit) => Boolean(unit.tenantId));
+  }, [units]);
+
+  const canCreateRequests = currentUser?.role === "LANDLORD" || currentUser?.role === "TENANT";
+
+  const selectedRequestUnit = useMemo(() => {
+    return requestableUnits.find((unit) => unit._id === newRequestForm.unitId) || null;
+  }, [newRequestForm.unitId, requestableUnits]);
+
+  const selectedRequestTenant = useMemo(() => {
+    if (currentUser?.role === "TENANT") {
+      return currentUser;
+    }
+
+    return tenants.find((tenant) => tenant._id === selectedRequestUnit?.tenantId) || null;
+  }, [currentUser, selectedRequestUnit?.tenantId, tenants]);
+
+  const openNewRequestModal = () => {
+    const firstUnit = requestableUnits[0];
+
+    if (!firstUnit) {
+      showToast({
+        message: currentUser?.role === "TENANT" ? "No unit is assigned to your account." : "Create or assign an occupied unit before adding a request.",
+        tone: "error",
+      });
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+    setNewRequestForm({
+      ...emptyNewRequestForm,
+      propertyId: firstUnit.propertyId,
+      unitId: firstUnit._id,
+    });
+    setIsNewRequestModalOpen(true);
+  };
+
+  const closeNewRequestModal = () => {
+    if (updatingAction) {
+      return;
+    }
+
+    setIsNewRequestModalOpen(false);
+    setNewRequestForm(emptyNewRequestForm);
+  };
+
+  const updateNewRequestForm = (key: keyof NewRequestForm, value: string) => {
+    setNewRequestForm((current) => {
+      if (key !== "propertyId") {
+        return { ...current, [key]: value };
+      }
+
+      const firstUnitForProperty = requestableUnits.find((unit) => unit.propertyId === value);
+      return {
+        ...current,
+        propertyId: value,
+        unitId: firstUnitForProperty?._id || "",
+      };
+    });
+  };
+
+  const submitNewRequest = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!selectedRequestUnit || !selectedRequestTenant || !newRequestForm.title.trim() || !newRequestForm.description.trim()) {
+      setError("Complete the title, description, and assigned unit before creating this request.");
+      return;
+    }
+
+    setUpdatingAction("new-request");
+    setError(null);
+
+    try {
+      await apiPost<RequestItem, {
+        description: string;
+        propertyId: string;
+        tenantId: string;
+        title: string;
+        unitId: string;
+        urgency: UrgencyLevel;
+      }>("/requests", {
+        description: newRequestForm.description.trim(),
+        propertyId: selectedRequestUnit.propertyId,
+        tenantId: selectedRequestTenant._id,
+        title: newRequestForm.title.trim(),
+        unitId: selectedRequestUnit._id,
+        urgency: newRequestForm.urgency,
+      });
+      await loadRequestsPage();
+      setIsNewRequestModalOpen(false);
+      setNewRequestForm(emptyNewRequestForm);
+      setSuccess("Maintenance request created.");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Unable to create the request.");
+    } finally {
+      setUpdatingAction(null);
+    }
+  };
+
+  const exportRequests = () => {
+    if (!filteredRequests.length) {
+      showToast({ message: "There are no requests to export.", tone: "error" });
+      return;
+    }
+
+    const headers = [
+      "Title",
+      "Description",
+      "Status",
+      "Urgency",
+      "Property",
+      "Unit",
+      "Tenant",
+      "Vendor",
+      "Created at",
+      "Updated at",
+    ];
+    const rows = filteredRequests.map((request) => [
+      request.title,
+      request.description,
+      formatLabel(request.status),
+      formatLabel(request.urgency),
+      request.propertyName || "",
+      request.unitNumber || "",
+      request.tenantName || "",
+      request.vendorName || "Unassigned",
+      request.createdAt,
+      request.updatedAt || "",
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(",")).join("\n");
+    const downloadUrl = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const downloadLink = document.createElement("a");
+
+    downloadLink.href = downloadUrl;
+    downloadLink.download = `rentora-maintenance-requests-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
+    URL.revokeObjectURL(downloadUrl);
+    showToast({ message: `${filteredRequests.length} request${filteredRequests.length === 1 ? "" : "s"} exported.`, tone: "success" });
+  };
+
   return (
     <div className="mx-auto grid max-w-none gap-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -218,16 +440,18 @@ export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button icon={<FiEdit3 aria-hidden="true" size={16} />} size="sm">
-            New request
-          </Button>
-          <Button size="sm" variant="secondary">
+          {canCreateRequests ? (
+            <Button icon={<FiEdit3 aria-hidden="true" size={16} />} onClick={openNewRequestModal} size="sm">
+              New request
+            </Button>
+          ) : null}
+          <Button icon={<FiDownload aria-hidden="true" size={16} />} onClick={exportRequests} size="sm" variant="secondary">
             Export
           </Button>
         </div>
       </div>
 
-      <section className="grid grid-flow-col auto-cols-[minmax(190px,1fr)] gap-3 overflow-x-auto pb-1">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-5">
         <Card className="p-4 shadow-sm">
           <p className="text-xs font-semibold text-text-secondary">Open requests</p>
           <p className="mt-2 text-2xl font-bold text-text-primary">{loadState === "loading" ? "..." : metrics.open}</p>
@@ -263,9 +487,9 @@ export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
           <CardTitle>Filters</CardTitle>
           <CardDescription>Refine by keyword, status, urgency, property, vendor, and date.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr_1fr]">
-            <label className="grid gap-2">
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="grid gap-2 md:col-span-2">
               <span className="text-xs font-semibold text-text-primary">Search</span>
               <span className="relative">
                 <TextField
@@ -301,9 +525,7 @@ export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
               }))}
               value={filters.urgency}
             />
-          </div>
 
-          <div className="grid gap-4 xl:grid-cols-[1fr_1fr_0.65fr_0.65fr_auto]">
             <Dropdown
               label="Property"
               onChange={(value) => updateFilter("propertyId", value)}
@@ -351,12 +573,6 @@ export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
           </div>
         </CardContent>
       </Card>
-
-      {error ? (
-        <div className="rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-          {error}
-        </div>
-      ) : null}
 
       <Card elevated className="overflow-hidden">
         <CardHeader
@@ -422,6 +638,98 @@ export function RequestsPage({ initialQuery = "" }: { initialQuery?: string }) {
           </table>
         </div>
       </Card>
+
+      {isNewRequestModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
+          onMouseDown={closeNewRequestModal}
+          role="presentation"
+        >
+          <div
+            aria-labelledby="new-request-title"
+            aria-modal="true"
+            className="w-full max-w-2xl overflow-visible rounded-md border border-border bg-surface shadow-[var(--rentora-shadow-panel)]"
+            onMouseDown={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <div className="border-b border-divider p-5">
+              <h2 className="text-lg font-bold text-text-primary" id="new-request-title">New maintenance request</h2>
+              <p className="mt-1 text-sm text-text-secondary">Describe the issue and select the occupied unit it affects.</p>
+            </div>
+            <form className="grid gap-4 p-5" onSubmit={submitNewRequest}>
+              {currentUser?.role === "LANDLORD" ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Dropdown
+                    label="Property"
+                    onChange={(value) => updateNewRequestForm("propertyId", value)}
+                    options={properties.map((property) => ({ label: property.name, value: property._id }))}
+                    value={newRequestForm.propertyId}
+                  />
+                  <Dropdown
+                    disabled={!newRequestForm.propertyId}
+                    label="Occupied unit"
+                    onChange={(value) => updateNewRequestForm("unitId", value)}
+                    options={requestableUnits
+                      .filter((unit) => unit.propertyId === newRequestForm.propertyId)
+                      .map((unit) => ({ label: unit.unitNumber, value: unit._id }))}
+                    value={newRequestForm.unitId}
+                  />
+                </div>
+              ) : (
+                <div className="grid gap-3 rounded-md border border-primary-light bg-primary-soft p-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold text-primary">Property</p>
+                    <p className="mt-1 text-sm font-bold text-text-primary">{properties[0]?.name || "Assigned property"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-primary">Unit</p>
+                    <p className="mt-1 text-sm font-bold text-text-primary">{selectedRequestUnit?.unitNumber || "-"}</p>
+                  </div>
+                </div>
+              )}
+              <div className="rounded-md border border-divider bg-surface-muted px-3 py-2.5">
+                <p className="text-xs font-semibold text-text-muted">Tenant</p>
+                <p className="mt-1 text-sm font-bold text-text-primary">{selectedRequestTenant?.name || "No tenant assigned"}</p>
+              </div>
+              <label className="grid gap-2">
+                <span className="text-xs font-semibold text-text-primary">Request title</span>
+                <TextField
+                  autoFocus
+                  maxLength={140}
+                  onChange={(event) => updateNewRequestForm("title", event.target.value)}
+                  placeholder="e.g. Kitchen sink is leaking"
+                  value={newRequestForm.title}
+                />
+              </label>
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+                <label className="grid gap-2">
+                  <span className="text-xs font-semibold text-text-primary">Description</span>
+                  <TextArea
+                    maxLength={2000}
+                    onChange={(event) => updateNewRequestForm("description", event.target.value)}
+                    placeholder="Include the location, what is happening, and any helpful details."
+                    value={newRequestForm.description}
+                  />
+                </label>
+                <Dropdown
+                  label="Urgency"
+                  onChange={(value) => updateNewRequestForm("urgency", value)}
+                  options={urgencies.map((urgency) => ({ label: formatLabel(urgency), value: urgency }))}
+                  value={newRequestForm.urgency}
+                />
+              </div>
+              <div className="flex justify-end gap-2 border-t border-divider pt-4">
+                <Button disabled={Boolean(updatingAction)} onClick={closeNewRequestModal} type="button" variant="secondary">
+                  Cancel
+                </Button>
+                <Button isLoading={updatingAction === "new-request"} type="submit">
+                  Create request
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

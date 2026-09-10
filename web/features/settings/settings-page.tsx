@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -8,21 +8,21 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  FiBriefcase,
+  FiCamera,
   FiCheck,
   FiLock,
-  FiLogOut,
-  FiMail,
   FiRefreshCw,
-  FiSettings,
-  FiUser,
+  FiTrash2,
   TextArea,
   TextField,
 } from "@/components/ui";
-import { apiGet, apiPatch, apiPost } from "@/lib/api/client";
+import { useToastMessages } from "@/components/app/toast-provider";
+import { apiDelete, apiGet, apiPatch, apiPatchForm, apiPost } from "@/lib/api/client";
+import { API_BASE_URL } from "@/lib/api/config";
 import type { SubscriptionStatus } from "@/lib/api/types";
-import { clearAuthSession, getAuthUser, getRefreshToken, updateAuthUserSession } from "@/lib/auth/storage";
+import { clearAuthSession, getAuthUser, updateAuthUserSession } from "@/lib/auth/storage";
 import type { AuthUser } from "@/lib/auth/types";
+import { showToast } from "@/lib/ui/toast";
 import {
   type AuthFieldErrors,
   validateConfirmPassword,
@@ -32,8 +32,7 @@ import {
 } from "@/lib/auth/validation";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
-type ActionState = "profile" | "organization" | "password" | "logout" | "refresh" | null;
-type SettingsTab = "account" | "workspace" | "notifications" | "security";
+type ActionState = "profile" | "organization" | "password" | "logout" | "refresh" | "deleteAccount" | null;
 
 type ProfileResponse = {
   profile: {
@@ -43,6 +42,14 @@ type ProfileResponse = {
     profileImage?: string;
     propertyName?: string;
     unitNumber?: string;
+  };
+};
+type ProfileUpdateResponse = {
+  message: string;
+  profile?: {
+    email?: string;
+    fullName?: string;
+    profileImage?: string;
   };
 };
 
@@ -64,7 +71,6 @@ type OrganizationItem = {
 type ProfileForm = {
   email: string;
   fullName: string;
-  profileImage: string;
 };
 
 type OrganizationForm = {
@@ -79,38 +85,14 @@ type PasswordForm = {
 
 type PreferenceKey = "emailDigest" | "requestUpdates" | "vendorAlerts";
 type Preferences = Record<PreferenceKey, boolean>;
-
-const settingsTabs: Array<{
-  description: string;
-  id: SettingsTab;
+type AccountContextRow = {
   label: string;
-}> = [
-  {
-    description: "Profile identity and login email",
-    id: "account",
-    label: "Account",
-  },
-  {
-    description: "Company details and subscription",
-    id: "workspace",
-    label: "Workspace",
-  },
-  {
-    description: "Operational update preferences",
-    id: "notifications",
-    label: "Notifications",
-  },
-  {
-    description: "Password and browser session",
-    id: "security",
-    label: "Security",
-  },
-];
+  value?: string | number | null;
+};
 
 const emptyProfileForm: ProfileForm = {
   email: "",
   fullName: "",
-  profileImage: "",
 };
 
 const emptyOrganizationForm: OrganizationForm = {
@@ -181,24 +163,16 @@ function formatStatus(value?: string) {
     .join(" ");
 }
 
-function validateOptionalUrl(value: string): string | null {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return null;
+function resolveMediaUrl(value: string) {
+  if (!value) {
+    return "";
   }
 
-  try {
-    const url = new URL(trimmedValue);
-
-    if (!["http:", "https:"].includes(url.protocol)) {
-      return "Enter a valid image URL.";
-    }
-
-    return null;
-  } catch {
-    return "Enter a valid image URL.";
+  if (value.startsWith("/media/")) {
+    return `${API_BASE_URL.replace(/\/api$/, "")}${value}`;
   }
+
+  return value;
 }
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
@@ -206,15 +180,6 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
     <div className="grid gap-1 border-b border-divider py-3 last:border-b-0">
       <span className="text-xs font-semibold text-text-muted">{label}</span>
       <span className="break-words text-sm font-semibold text-text-primary">{value || "-"}</span>
-    </div>
-  );
-}
-
-function SectionTitle({ children, icon }: { children: ReactNode; icon: ReactNode }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="flex size-8 items-center justify-center rounded-sm bg-primary-soft text-primary">{icon}</span>
-      <span>{children}</span>
     </div>
   );
 }
@@ -248,7 +213,9 @@ function ToggleRow({
 
 export function SettingsPage() {
   const [actionState, setActionState] = useState<ActionState>(null);
-  const [activeTab, setActiveTab] = useState<SettingsTab>("account");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     if (typeof window === "undefined") {
       return null;
@@ -261,14 +228,22 @@ export function SettingsPage() {
   const [organization, setOrganization] = useState<OrganizationItem | null>(null);
   const [organizationErrors, setOrganizationErrors] = useState<AuthFieldErrors<keyof OrganizationForm>>({});
   const [organizationForm, setOrganizationForm] = useState<OrganizationForm>(emptyOrganizationForm);
+  const [originalOrganizationForm, setOriginalOrganizationForm] = useState<OrganizationForm>(emptyOrganizationForm);
   const [passwordErrors, setPasswordErrors] = useState<AuthFieldErrors<keyof PasswordForm>>({});
   const [passwordForm, setPasswordForm] = useState<PasswordForm>(emptyPasswordForm);
   const [preferences, setPreferences] = useState<Preferences>(getInitialPreferences);
   const [profile, setProfile] = useState<ProfileResponse["profile"] | null>(null);
   const [profileErrors, setProfileErrors] = useState<AuthFieldErrors<keyof ProfileForm>>({});
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
+  const [profileImageError, setProfileImageError] = useState<string | null>(null);
+  const [selectedProfileImageFile, setSelectedProfileImageFile] = useState<File | null>(null);
+  const [selectedProfileImagePreview, setSelectedProfileImagePreview] = useState("");
+  const [originalProfileForm, setOriginalProfileForm] = useState<ProfileForm>(emptyProfileForm);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const profileImageInputRef = useRef<HTMLInputElement | null>(null);
+
+  useToastMessages({ error, success });
 
   const loadSettings = async () => {
     setActionState((current) => current || "refresh");
@@ -284,16 +259,19 @@ export function SettingsPage() {
 
       setCurrentUser(getAuthUser());
       setProfile(profileResponse.profile);
-      setProfileForm({
+      const nextProfileForm = {
         email: profileResponse.profile.email || "",
         fullName: profileResponse.profile.fullName || "",
-        profileImage: profileResponse.profile.profileImage || "",
-      });
+      };
+      setProfileForm(nextProfileForm);
+      setOriginalProfileForm(nextProfileForm);
       setOrganization(organizationResponse);
-      setOrganizationForm({
+      const nextOrganizationForm = {
         companyAddress: organizationResponse?.companyAddress || "",
         name: organizationResponse?.name || "",
-      });
+      };
+      setOrganizationForm(nextOrganizationForm);
+      setOriginalOrganizationForm(nextOrganizationForm);
       setSubscription(subscriptionResponse);
       setLoadState("ready");
     } catch (caughtError) {
@@ -312,23 +290,72 @@ export function SettingsPage() {
     return () => window.clearTimeout(loadTimer);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (selectedProfileImagePreview) {
+        URL.revokeObjectURL(selectedProfileImagePreview);
+      }
+    };
+  }, [selectedProfileImagePreview]);
+
   const subscriptionRows = useMemo(
     () => [
       { label: "Plan", value: subscription?.planType || organization?.planType || "Trial" },
       { label: "Subscription", value: formatStatus(subscription?.subscriptionStatus || organization?.subscriptionStatus) },
       { label: "Unit limit", value: subscription?.unitLimit ?? organization?.unitLimit ?? "-" },
       { label: "Trial ends", value: formatDate(subscription?.trialEndsAt || organization?.trialEndsAt) },
-      { label: "Workspace active", value: organization?.isActive === false ? "No" : "Yes" },
-      { label: "Organization ID", value: organization?._id || currentUser?.organizationId },
     ],
-    [currentUser?.organizationId, organization, subscription]
+    [organization, subscription]
   );
+
+  const accountContextRows = useMemo<AccountContextRow[]>(() => {
+    const baseRows: AccountContextRow[] = [
+      { label: "Role", value: formatRole(currentUser?.role) },
+      { label: "User ID", value: currentUser?._id },
+      { label: "Organization ID", value: organization?._id || currentUser?.organizationId },
+    ];
+
+    if (currentUser?.role === "TENANT") {
+      return [
+        ...baseRows,
+        { label: "Tenant property", value: profile?.propertyName },
+        { label: "Tenant unit", value: profile?.unitNumber },
+        { label: "Landlord", value: profile?.landlordName },
+      ];
+    }
+
+    if (currentUser?.role === "VENDOR") {
+      return baseRows;
+    }
+
+    return baseRows;
+  }, [
+    currentUser?._id,
+    currentUser?.organizationId,
+    currentUser?.role,
+    organization?._id,
+    profile?.landlordName,
+    profile?.propertyName,
+    profile?.unitNumber,
+  ]);
+
+  const accountEmail = profile?.email || currentUser?.email || "";
+  const canConfirmAccountDeletion = Boolean(accountEmail) && deleteConfirmation.trim().toLowerCase() === accountEmail.toLowerCase();
+  const profileImagePreview = selectedProfileImagePreview || resolveMediaUrl(profile?.profileImage || "");
+  const profileInitial = (profileForm.fullName || profileForm.email || currentUser?.name || "R").trim().slice(0, 1).toUpperCase();
+  const isProfileDirty =
+    profileForm.email.trim().toLowerCase() !== originalProfileForm.email.trim().toLowerCase() ||
+    profileForm.fullName.trim() !== originalProfileForm.fullName.trim() ||
+    Boolean(selectedProfileImageFile);
+  const isOrganizationDirty =
+    organizationForm.name.trim() !== originalOrganizationForm.name.trim() ||
+    organizationForm.companyAddress.trim() !== originalOrganizationForm.companyAddress.trim();
 
   const updatePreference = (key: PreferenceKey, value: boolean) => {
     const nextPreferences = { ...preferences, [key]: value };
     setPreferences(nextPreferences);
     window.localStorage.setItem(preferenceStorageKey, JSON.stringify(nextPreferences));
-    setSuccess("Preferences updated.");
+    showToast({ message: "Preferences updated.", tone: "success" });
     setError(null);
   };
 
@@ -337,9 +364,58 @@ export function SettingsPage() {
     setProfileErrors((current) => ({ ...current, [key]: undefined }));
   };
 
+  const selectProfileImage = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setProfileImageError("Select a valid image file.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setProfileImageError("Select an image smaller than 2 MB.");
+      return;
+    }
+
+    if (selectedProfileImagePreview) {
+      URL.revokeObjectURL(selectedProfileImagePreview);
+    }
+
+    setSelectedProfileImageFile(file);
+    setSelectedProfileImagePreview(URL.createObjectURL(file));
+    setProfileImageError(null);
+    setError(null);
+    setSuccess(null);
+  };
+
   const updateOrganizationForm = (key: keyof OrganizationForm, value: string) => {
     setOrganizationForm((current) => ({ ...current, [key]: value }));
     setOrganizationErrors((current) => ({ ...current, [key]: undefined }));
+  };
+
+  const resetProfileForm = () => {
+    setProfileForm(originalProfileForm);
+    setSelectedProfileImageFile(null);
+    if (selectedProfileImagePreview) {
+      URL.revokeObjectURL(selectedProfileImagePreview);
+    }
+    setSelectedProfileImagePreview("");
+    setProfileImageError(null);
+    setProfileErrors({});
+    setError(null);
+    setSuccess(null);
+  };
+
+  const resetOrganizationForm = () => {
+    setOrganizationForm(originalOrganizationForm);
+    setOrganizationErrors({});
+    setError(null);
+    setSuccess(null);
   };
 
   const updatePasswordForm = (key: keyof PasswordForm, value: string) => {
@@ -353,12 +429,11 @@ export function SettingsPage() {
     const nextErrors: AuthFieldErrors<keyof ProfileForm> = {
       email: validateEmail(profileForm.email) || undefined,
       fullName: validateRequired(profileForm.fullName, "Full name", 2, 120) || undefined,
-      profileImage: validateOptionalUrl(profileForm.profileImage) || undefined,
     };
 
     setProfileErrors(nextErrors);
 
-    if (Object.values(nextErrors).some(Boolean)) {
+    if (Object.values(nextErrors).some(Boolean) || !isProfileDirty) {
       return;
     }
 
@@ -367,16 +442,32 @@ export function SettingsPage() {
     setSuccess(null);
 
     try {
-      await apiPatch<{ message: string }, ProfileForm>("/auth/profile", {
-        email: profileForm.email.trim().toLowerCase(),
-        fullName: profileForm.fullName.trim(),
-        profileImage: profileForm.profileImage.trim(),
-      });
+      const payload = new FormData();
+      payload.set("email", profileForm.email.trim().toLowerCase());
+      payload.set("fullName", profileForm.fullName.trim());
+
+      if (selectedProfileImageFile) {
+        payload.set("profileImageFile", selectedProfileImageFile);
+      }
+
+      const updatedProfile = await apiPatchForm<ProfileUpdateResponse>("/auth/profile", payload);
+      const nextProfileForm = {
+        email: updatedProfile.profile?.email || profileForm.email.trim().toLowerCase(),
+        fullName: updatedProfile.profile?.fullName || profileForm.fullName.trim(),
+      };
+
       updateAuthUserSession({
-        email: profileForm.email.trim().toLowerCase(),
-        name: profileForm.fullName.trim(),
+        email: nextProfileForm.email,
+        name: nextProfileForm.fullName,
       });
       setCurrentUser(getAuthUser());
+      if (selectedProfileImagePreview) {
+        URL.revokeObjectURL(selectedProfileImagePreview);
+      }
+      setSelectedProfileImageFile(null);
+      setSelectedProfileImagePreview("");
+      setProfileForm(nextProfileForm);
+      setOriginalProfileForm(nextProfileForm);
       setSuccess("Profile updated.");
       await loadSettings();
     } catch (caughtError) {
@@ -396,7 +487,7 @@ export function SettingsPage() {
 
     setOrganizationErrors(nextErrors);
 
-    if (Object.values(nextErrors).some(Boolean)) {
+    if (Object.values(nextErrors).some(Boolean) || !isOrganizationDirty) {
       return;
     }
 
@@ -411,6 +502,11 @@ export function SettingsPage() {
       });
 
       setOrganization(updatedOrganization);
+      setOriginalOrganizationForm({
+        companyAddress: organizationForm.companyAddress.trim(),
+        name: organizationForm.name.trim(),
+      });
+      window.dispatchEvent(new Event("rentora-header-context-changed"));
       setSuccess("Organization updated.");
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Unable to update organization.");
@@ -443,6 +539,7 @@ export function SettingsPage() {
       });
       setPasswordForm(emptyPasswordForm);
       setSuccess("Password updated.");
+      setIsPasswordDialogOpen(false);
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Unable to update password.");
     } finally {
@@ -450,31 +547,68 @@ export function SettingsPage() {
     }
   };
 
-  const signOut = async () => {
-    setActionState("logout");
+  const openPasswordDialog = () => {
+    setPasswordForm(emptyPasswordForm);
+    setPasswordErrors({});
     setError(null);
+    setSuccess(null);
+    setIsPasswordDialogOpen(true);
+  };
 
-    const refreshToken = getRefreshToken();
+  const closePasswordDialog = () => {
+    if (actionState === "password") {
+      return;
+    }
+
+    setPasswordForm(emptyPasswordForm);
+    setPasswordErrors({});
+    setIsPasswordDialogOpen(false);
+  };
+
+  const openDeleteDialog = () => {
+    setDeleteConfirmation("");
+    setError(null);
+    setSuccess(null);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    if (actionState === "deleteAccount") {
+      return;
+    }
+
+    setDeleteConfirmation("");
+    setIsDeleteDialogOpen(false);
+  };
+
+  const deleteAccount = async () => {
+    if (!canConfirmAccountDeletion) {
+      return;
+    }
+
+    setActionState("deleteAccount");
+    setError(null);
+    setSuccess(null);
 
     try {
-      if (refreshToken) {
-        await apiPost<{ message: string }, { refreshToken: string }>("/auth/logout", { refreshToken });
-      }
-    } catch {
-      // Local cleanup still completes sign out if the refresh token is already invalid.
-    } finally {
+      await apiDelete<{ message: string }>("/auth/account");
       clearAuthSession();
       window.location.assign("/login");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Unable to delete account.");
+      setIsDeleteDialogOpen(false);
+    } finally {
+      setActionState(null);
     }
   };
 
   return (
     <div className="mx-auto grid max-w-none gap-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-normal text-text-primary sm:text-3xl">Settings</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
-            Manage profile details, workspace information, subscription state, and security preferences.
+            Manage profile details, workspace information, subscription state, and notification preferences.
           </p>
         </div>
         <Button
@@ -484,314 +618,364 @@ export function SettingsPage() {
           size="sm"
           variant="secondary"
         >
-          Refresh
+          <span className="hidden sm:inline">Refresh</span>
         </Button>
       </div>
 
-      {success ? (
-        <div className="rounded-md border border-success bg-success-soft px-4 py-3 text-sm font-medium text-success">
-          {success}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-          {error}
-        </div>
-      ) : null}
-
-      <section className="grid grid-flow-col auto-cols-[minmax(210px,1fr)] gap-3 overflow-x-auto pb-1">
-        <Card className="p-4 shadow-sm">
-          <p className="text-xs font-semibold text-text-secondary">Signed in as</p>
-          <p className="mt-2 truncate text-xl font-bold text-text-primary">{profile?.fullName || currentUser?.name || "-"}</p>
-        </Card>
-        <Card className="p-4 shadow-sm">
-          <p className="text-xs font-semibold text-text-secondary">Role</p>
-          <p className="mt-2 text-xl font-bold text-text-primary">{formatRole(currentUser?.role)}</p>
-        </Card>
-        <Card className="p-4 shadow-sm">
-          <p className="text-xs font-semibold text-text-secondary">Organization</p>
-          <p className="mt-2 truncate text-xl font-bold text-text-primary">{organization?.name || "-"}</p>
-        </Card>
-        <Card className="p-4 shadow-sm">
-          <p className="text-xs font-semibold text-text-secondary">Plan</p>
-          <p className="mt-2 text-xl font-bold text-text-primary">{subscription?.planType || organization?.planType || "Trial"}</p>
-        </Card>
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {subscriptionRows.map((row) => (
+          <Card className="p-4 shadow-sm" key={row.label}>
+            <p className="text-xs font-semibold text-text-secondary">{row.label}</p>
+            <p className="mt-2 truncate text-xl font-bold text-text-primary">{row.value}</p>
+          </Card>
+        ))}
       </section>
 
-      <nav
-        aria-label="Settings sections"
-        className="grid gap-2 rounded-md border border-border bg-surface p-2 shadow-sm md:grid-cols-4"
-        role="tablist"
-      >
-        {settingsTabs.map((tab) => {
-          const isActive = activeTab === tab.id;
+      <section className="grid gap-6 xl:grid-cols-[0.7fr_0.3fr]">
+          <div className="grid gap-4">
+            <Card elevated>
+              <CardContent>
+                <form className="grid gap-5" onSubmit={saveProfile}>
+                  <div className="grid gap-5 lg:grid-cols-[180px_1fr]">
+                    <div className="grid content-start gap-3">
+                      <div className="relative h-44 w-44 overflow-hidden rounded-md border border-border bg-primary-soft shadow-sm">
+                        {profileImagePreview ? (
+                          <div
+                            aria-label="Profile image preview"
+                            className="h-full w-full bg-cover bg-center"
+                            role="img"
+                            style={{ backgroundImage: `url(${JSON.stringify(profileImagePreview)})` }}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-5xl font-bold text-primary">
+                            {profileInitial}
+                          </div>
+                        )}
 
-          return (
-            <button
-              aria-selected={isActive}
-              className={[
-                "grid min-h-16 gap-1 rounded-sm px-4 py-3 text-left transition",
-                isActive ? "bg-primary text-white" : "text-text-primary hover:bg-surface-muted",
-              ].join(" ")}
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              role="tab"
-              type="button"
-            >
-              <span className="text-sm font-bold">{tab.label}</span>
-              <span className={["text-xs font-medium leading-5", isActive ? "text-white/80" : "text-text-secondary"].join(" ")}>
-                {tab.description}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
+                        <button
+                          aria-label="Select profile image"
+                          className="absolute bottom-3 right-3 flex size-10 items-center justify-center rounded-md bg-primary text-white shadow-[0_12px_24px_rgb(62_84_211/24%)] transition hover:bg-primary-dark"
+                          onClick={() => profileImageInputRef.current?.click()}
+                          title="Select profile image"
+                          type="button"
+                        >
+                          <FiCamera aria-hidden="true" size={18} />
+                        </button>
+                      </div>
 
-      {activeTab === "account" ? (
-        <section className="grid gap-6 xl:grid-cols-[0.7fr_0.3fr]">
-          <Card elevated>
-            <CardHeader>
-              <CardTitle>
-                <SectionTitle icon={<FiUser aria-hidden="true" size={16} />}>Profile</SectionTitle>
-              </CardTitle>
-              <CardDescription>Account identity used across the web workspace.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="grid gap-4" onSubmit={saveProfile}>
-                <label className="grid gap-2">
-                  <span className="text-xs font-semibold text-text-primary">Full name</span>
-                  <TextField
-                    aria-invalid={Boolean(profileErrors.fullName)}
-                    onChange={(event) => updateProfileForm("fullName", event.target.value)}
-                    placeholder="Avery Brooks"
-                    value={profileForm.fullName}
-                  />
-                  {profileErrors.fullName ? <span className="text-xs font-medium text-danger">{profileErrors.fullName}</span> : null}
-                </label>
+                      <input
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={selectProfileImage}
+                        ref={profileImageInputRef}
+                        type="file"
+                      />
 
-                <label className="grid gap-2">
-                  <span className="text-xs font-semibold text-text-primary">Email</span>
-                  <TextField
-                    aria-invalid={Boolean(profileErrors.email)}
-                    onChange={(event) => updateProfileForm("email", event.target.value)}
-                    placeholder="manager@rentora.com"
-                    type="email"
-                    value={profileForm.email}
-                  />
-                  {profileErrors.email ? <span className="text-xs font-medium text-danger">{profileErrors.email}</span> : null}
-                </label>
+                      {profileImageError ? (
+                        <span className="max-w-44 text-xs font-medium leading-5 text-danger">{profileImageError}</span>
+                      ) : null}
+                    </div>
 
-                <label className="grid gap-2">
-                  <span className="text-xs font-semibold text-text-primary">Profile image URL</span>
-                  <TextField
-                    aria-invalid={Boolean(profileErrors.profileImage)}
-                    onChange={(event) => updateProfileForm("profileImage", event.target.value)}
-                    placeholder="https://example.com/avatar.jpg"
-                    type="url"
-                    value={profileForm.profileImage}
-                  />
-                  {profileErrors.profileImage ? (
-                    <span className="text-xs font-medium text-danger">{profileErrors.profileImage}</span>
-                  ) : null}
-                </label>
+                    <div className="grid content-start gap-4">
+                      <label className="grid gap-2">
+                        <span className="text-xs font-semibold text-text-primary">Full name</span>
+                        <TextField
+                          aria-invalid={Boolean(profileErrors.fullName)}
+                          onChange={(event) => updateProfileForm("fullName", event.target.value)}
+                          placeholder="Avery Brooks"
+                          value={profileForm.fullName}
+                        />
+                        {profileErrors.fullName ? <span className="text-xs font-medium text-danger">{profileErrors.fullName}</span> : null}
+                      </label>
 
-                <div className="flex justify-end border-t border-divider pt-4">
-                  <Button icon={<FiCheck aria-hidden="true" size={16} />} isLoading={actionState === "profile"} type="submit">
-                    Save profile
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                      <label className="grid gap-2">
+                        <span className="text-xs font-semibold text-text-primary">Email</span>
+                        <TextField
+                          aria-invalid={Boolean(profileErrors.email)}
+                          onChange={(event) => updateProfileForm("email", event.target.value)}
+                          placeholder="manager@rentora.com"
+                          type="email"
+                          value={profileForm.email}
+                        />
+                        {profileErrors.email ? <span className="text-xs font-medium text-danger">{profileErrors.email}</span> : null}
+                      </label>
+                    </div>
+                  </div>
 
-          <Card elevated>
-            <CardHeader>
-              <CardTitle>Account context</CardTitle>
-              <CardDescription>Read-only identity details from the current session.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <InfoRow label="Role" value={formatRole(currentUser?.role)} />
-              <InfoRow label="Email" value={profile?.email || currentUser?.email} />
-              <InfoRow label="User ID" value={currentUser?._id} />
-              <InfoRow label="Tenant property" value={profile?.propertyName} />
-              <InfoRow label="Tenant unit" value={profile?.unitNumber} />
-              <InfoRow label="Landlord" value={profile?.landlordName} />
-            </CardContent>
-          </Card>
-        </section>
-      ) : null}
+                  <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+                    <Button
+                      disabled={!isProfileDirty || actionState === "profile"}
+                      onClick={resetProfileForm}
+                      type="button"
+                      variant="secondary"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      disabled={!isProfileDirty}
+                      icon={<FiCheck aria-hidden="true" size={16} />}
+                      isLoading={actionState === "profile"}
+                      type="submit"
+                    >
+                      Save profile
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
 
-      {activeTab === "workspace" ? (
-        <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-          <Card elevated>
-            <CardHeader>
-              <CardTitle>
-                <SectionTitle icon={<FiBriefcase aria-hidden="true" size={16} />}>Organization</SectionTitle>
-              </CardTitle>
-              <CardDescription>Workspace record attached to properties, units, tenants, and vendors.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="grid gap-4" onSubmit={saveOrganization}>
-                <label className="grid gap-2">
-                  <span className="text-xs font-semibold text-text-primary">Organization name</span>
-                  <TextField
-                    aria-invalid={Boolean(organizationErrors.name)}
-                    onChange={(event) => updateOrganizationForm("name", event.target.value)}
-                    placeholder="Rentora Property Group"
-                    value={organizationForm.name}
-                  />
-                  {organizationErrors.name ? <span className="text-xs font-medium text-danger">{organizationErrors.name}</span> : null}
-                </label>
+            <Card elevated>
+              <CardHeader>
+                <CardTitle>Organization</CardTitle>
+                <CardDescription>Workspace record attached to properties, units, tenants, and vendors.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form className="grid gap-4" onSubmit={saveOrganization}>
+                  <label className="grid gap-2">
+                    <span className="text-xs font-semibold text-text-primary">Organization name</span>
+                    <TextField
+                      aria-invalid={Boolean(organizationErrors.name)}
+                      onChange={(event) => updateOrganizationForm("name", event.target.value)}
+                      placeholder="Rentora Property Group"
+                      value={organizationForm.name}
+                    />
+                    {organizationErrors.name ? <span className="text-xs font-medium text-danger">{organizationErrors.name}</span> : null}
+                  </label>
 
-                <label className="grid gap-2">
-                  <span className="text-xs font-semibold text-text-primary">Company address</span>
-                  <TextArea
-                    aria-invalid={Boolean(organizationErrors.companyAddress)}
-                    onChange={(event) => updateOrganizationForm("companyAddress", event.target.value)}
-                    placeholder="2400 Maple Court, Austin, TX"
-                    value={organizationForm.companyAddress}
-                  />
-                  {organizationErrors.companyAddress ? (
-                    <span className="text-xs font-medium text-danger">{organizationErrors.companyAddress}</span>
-                  ) : null}
-                </label>
+                  <label className="grid gap-2">
+                    <span className="text-xs font-semibold text-text-primary">Company address</span>
+                    <TextArea
+                      aria-invalid={Boolean(organizationErrors.companyAddress)}
+                      onChange={(event) => updateOrganizationForm("companyAddress", event.target.value)}
+                      placeholder="2400 Maple Court, Austin, TX"
+                      value={organizationForm.companyAddress}
+                    />
+                    {organizationErrors.companyAddress ? (
+                      <span className="text-xs font-medium text-danger">{organizationErrors.companyAddress}</span>
+                    ) : null}
+                  </label>
 
-                <div className="flex justify-end border-t border-divider pt-4">
-                  <Button icon={<FiCheck aria-hidden="true" size={16} />} isLoading={actionState === "organization"} type="submit">
-                    Save organization
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                  <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+                    <Button
+                      disabled={!isOrganizationDirty || actionState === "organization"}
+                      onClick={resetOrganizationForm}
+                      type="button"
+                      variant="secondary"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      disabled={!isOrganizationDirty}
+                      icon={<FiCheck aria-hidden="true" size={16} />}
+                      isLoading={actionState === "organization"}
+                      type="submit"
+                    >
+                      Save organization
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
 
-          <Card elevated>
-            <CardHeader>
-              <CardTitle>
-                <SectionTitle icon={<FiSettings aria-hidden="true" size={16} />}>Subscription</SectionTitle>
-              </CardTitle>
-              <CardDescription>Current plan and billing-linked workspace state.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-0">
-                {subscriptionRows.map((row) => (
+          </div>
+
+          <div className="grid content-start gap-4">
+            <Card elevated>
+              <CardHeader>
+                <CardTitle>Account context</CardTitle>
+                <CardDescription>Role-specific details for the current session.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {accountContextRows.map((row) => (
                   <InfoRow key={row.label} label={row.label} value={row.value} />
                 ))}
+
+                <div className="mt-5 grid gap-2 border-t border-divider pt-5">
+                  <Button
+                    className="w-full justify-center"
+                    icon={<FiLock aria-hidden="true" size={16} />}
+                    onClick={openPasswordDialog}
+                    type="button"
+                  >
+                    Change password
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card elevated>
+              <CardHeader>
+                <CardTitle>Notifications</CardTitle>
+              </CardHeader>
+              <CardContent className="py-1">
+                <ToggleRow
+                  checked={preferences.requestUpdates}
+                  description="New request, status, and verification updates."
+                  label="Request updates"
+                  onChange={(checked) => updatePreference("requestUpdates", checked)}
+                />
+                <ToggleRow
+                  checked={preferences.vendorAlerts}
+                  description="Assignment, schedule, and completion activity."
+                  label="Vendor alerts"
+                  onChange={(checked) => updatePreference("vendorAlerts", checked)}
+                />
+                <ToggleRow
+                  checked={preferences.emailDigest}
+                  description="Daily summary for portfolio activity."
+                  label="Email digest"
+                  onChange={(checked) => updatePreference("emailDigest", checked)}
+                />
+              </CardContent>
+            </Card>
+          </div>
+          <Card className="border-danger !bg-rose-50/80 shadow-[0_18px_44px_rgb(220_38_38/10%)] xl:col-span-2">
+            <CardContent className="!bg-transparent">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-danger text-white">
+                      <FiTrash2 aria-hidden="true" size={15} />
+                    </span>
+                    <h3 className="text-lg font-bold text-text-primary">Delete account</h3>
+                  </div>
+                  <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-text-secondary">
+                    Permanently remove this account and its related Rentora data. A confirmation popup will ask for your email before deletion.
+                  </p>
+                </div>
+
+                <Button
+                  className="w-full sm:w-auto"
+                  icon={<FiTrash2 aria-hidden="true" size={16} />}
+                  onClick={openDeleteDialog}
+                  type="button"
+                  variant="danger"
+                >
+                  Delete account
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </section>
+      </section>
+
+      {isPasswordDialogOpen ? (
+        <div
+          aria-labelledby="change-password-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
+          role="dialog"
+        >
+          <div className="w-full max-w-md rounded-md border border-border bg-surface shadow-[var(--rentora-shadow-panel)]">
+            <div className="border-b border-divider p-5">
+              <h2 className="text-lg font-bold text-text-primary" id="change-password-title">
+                Change password
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">
+                Set a new password for this account session.
+              </p>
+            </div>
+
+            <form className="grid gap-4 p-5" onSubmit={changePassword}>
+              <label className="grid gap-2">
+                <span className="text-xs font-semibold text-text-primary">New password</span>
+                <TextField
+                  autoFocus
+                  aria-invalid={Boolean(passwordErrors.password)}
+                  onChange={(event) => updatePasswordForm("password", event.target.value)}
+                  type="password"
+                  value={passwordForm.password}
+                />
+                {passwordErrors.password ? <span className="text-xs font-medium text-danger">{passwordErrors.password}</span> : null}
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-xs font-semibold text-text-primary">Confirm password</span>
+                <TextField
+                  aria-invalid={Boolean(passwordErrors.confirmPassword)}
+                  onChange={(event) => updatePasswordForm("confirmPassword", event.target.value)}
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                />
+                {passwordErrors.confirmPassword ? (
+                  <span className="text-xs font-medium text-danger">{passwordErrors.confirmPassword}</span>
+                ) : null}
+              </label>
+
+              <div className="flex flex-col-reverse gap-2 border-t border-divider pt-4 sm:flex-row sm:justify-end">
+                <Button
+                  disabled={actionState === "password"}
+                  onClick={closePasswordDialog}
+                  type="button"
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+                <Button icon={<FiCheck aria-hidden="true" size={16} />} isLoading={actionState === "password"} type="submit">
+                  Update password
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       ) : null}
 
-      {activeTab === "notifications" ? (
-        <section className="grid gap-6 xl:grid-cols-[0.7fr_0.3fr]">
-          <Card elevated>
-            <CardHeader>
-              <CardTitle>
-                <SectionTitle icon={<FiMail aria-hidden="true" size={16} />}>Notifications</SectionTitle>
-              </CardTitle>
-              <CardDescription>Web preferences for operational updates.</CardDescription>
-            </CardHeader>
-            <CardContent className="py-1">
-              <ToggleRow
-                checked={preferences.requestUpdates}
-                description="New request, status, and verification updates."
-                label="Request updates"
-                onChange={(checked) => updatePreference("requestUpdates", checked)}
-              />
-              <ToggleRow
-                checked={preferences.vendorAlerts}
-                description="Assignment, schedule, and completion activity."
-                label="Vendor alerts"
-                onChange={(checked) => updatePreference("vendorAlerts", checked)}
-              />
-              <ToggleRow
-                checked={preferences.emailDigest}
-                description="Daily summary for portfolio activity."
-                label="Email digest"
-                onChange={(checked) => updatePreference("emailDigest", checked)}
-              />
-            </CardContent>
-          </Card>
+      {isDeleteDialogOpen ? (
+        <div
+          aria-labelledby="delete-account-title"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
+          role="dialog"
+        >
+          <div className="w-full max-w-md rounded-md border border-danger bg-surface shadow-[var(--rentora-shadow-panel)]">
+            <div className="border-b border-divider p-5">
+              <h2 className="text-base font-bold text-text-primary" id="delete-account-title">
+                Delete account
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-text-secondary">
+                This action cannot be undone. Type <span className="font-bold text-text-primary">{accountEmail}</span> to confirm.
+              </p>
+            </div>
 
-          <Card elevated>
-            <CardHeader>
-              <CardTitle>Preference storage</CardTitle>
-              <CardDescription>These web preferences are saved for this browser.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <InfoRow label="Request updates" value={preferences.requestUpdates ? "On" : "Off"} />
-              <InfoRow label="Vendor alerts" value={preferences.vendorAlerts ? "On" : "Off"} />
-              <InfoRow label="Email digest" value={preferences.emailDigest ? "On" : "Off"} />
-            </CardContent>
-          </Card>
-        </section>
-      ) : null}
+            <div className="grid gap-4 p-5">
+              <label className="grid gap-2">
+                <span className="text-xs font-semibold text-text-primary">Account email</span>
+                <TextField
+                  autoFocus
+                  onChange={(event) => setDeleteConfirmation(event.target.value)}
+                  placeholder={accountEmail}
+                  value={deleteConfirmation}
+                />
+              </label>
 
-      {activeTab === "security" ? (
-        <section className="grid gap-6 xl:grid-cols-[0.7fr_0.3fr]">
-          <Card elevated>
-            <CardHeader>
-              <CardTitle>
-                <SectionTitle icon={<FiLock aria-hidden="true" size={16} />}>Security</SectionTitle>
-              </CardTitle>
-              <CardDescription>Password and active browser session controls.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="grid gap-4" onSubmit={changePassword}>
-                <label className="grid gap-2">
-                  <span className="text-xs font-semibold text-text-primary">New password</span>
-                  <TextField
-                    aria-invalid={Boolean(passwordErrors.password)}
-                    onChange={(event) => updatePasswordForm("password", event.target.value)}
-                    type="password"
-                    value={passwordForm.password}
-                  />
-                  {passwordErrors.password ? <span className="text-xs font-medium text-danger">{passwordErrors.password}</span> : null}
-                </label>
+              <div className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-sm font-medium leading-6 text-danger">
+                {currentUser?.role === "LANDLORD"
+                  ? "Deleting a landlord owner account also deletes the organization, properties, units, users, vendors, requests, and notifications in this workspace."
+                  : "Deleting your account removes your profile, session, notifications, and related assignments."}
+              </div>
+            </div>
 
-                <label className="grid gap-2">
-                  <span className="text-xs font-semibold text-text-primary">Confirm password</span>
-                  <TextField
-                    aria-invalid={Boolean(passwordErrors.confirmPassword)}
-                    onChange={(event) => updatePasswordForm("confirmPassword", event.target.value)}
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                  />
-                  {passwordErrors.confirmPassword ? (
-                    <span className="text-xs font-medium text-danger">{passwordErrors.confirmPassword}</span>
-                  ) : null}
-                </label>
-
-                <div className="flex justify-end border-t border-divider pt-4">
-                  <Button icon={<FiCheck aria-hidden="true" size={16} />} isLoading={actionState === "password"} type="submit">
-                    Update password
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-
-          <Card elevated>
-            <CardHeader>
-              <CardTitle>Session</CardTitle>
-              <CardDescription>End this browser session and return to login.</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <div className="flex flex-col-reverse gap-2 border-t border-divider p-5 sm:flex-row sm:justify-end">
               <Button
-                className="w-full"
-                icon={<FiLogOut aria-hidden="true" size={16} />}
-                isLoading={actionState === "logout"}
-                onClick={signOut}
+                disabled={actionState === "deleteAccount"}
+                onClick={closeDeleteDialog}
                 type="button"
                 variant="secondary"
               >
-                Sign out
+                Cancel
               </Button>
-            </CardContent>
-          </Card>
-        </section>
+              <Button
+                icon={<FiTrash2 aria-hidden="true" size={16} />}
+                isLoading={actionState === "deleteAccount"}
+                disabled={!canConfirmAccountDeletion}
+                onClick={deleteAccount}
+                type="button"
+                variant="danger"
+              >
+                Permanently delete
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

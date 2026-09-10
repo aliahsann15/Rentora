@@ -66,6 +66,17 @@ export function getRefreshToken(): string | null {
   return getStoredValue(REFRESH_TOKEN_KEY);
 }
 
+export function updateAccessToken(accessToken: string) {
+  const storage = getSessionStorageForKey(REFRESH_TOKEN_KEY);
+
+  if (!storage) {
+    return;
+  }
+
+  storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  notifyAuthUserChanged();
+}
+
 export function getAuthUser(): AuthUser | null {
   const rawUser = getAuthUserSnapshot();
 

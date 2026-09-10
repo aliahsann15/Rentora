@@ -1,18 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { FiBell, FiCheck, FiRefreshCw } from "@/components/ui";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FiBell, FiCheck, FiMenu, FiRefreshCw } from "@/components/ui";
 import { apiGet, apiPatch } from "@/lib/api/client";
 import type { NotificationItem } from "@/lib/api/types";
 import type { AuthUser } from "@/lib/auth/types";
-import { appNavItems } from "./app-nav";
+import { useToastMessages } from "./toast-provider";
 
 type TopbarProps = {
+  onOpenSidebar: () => void;
   user: AuthUser | null;
 };
+type HeaderProfile = {
+  profile?: {
+    propertyName?: string;
+  };
+};
+type HeaderOrganization = {
+  name?: string;
+};
+
+const headerContextChangedEvent = "rentora-header-context-changed";
 
 function formatNotificationTime(value?: string) {
   if (!value) {
@@ -51,17 +60,55 @@ function getNotificationTarget(notification: NotificationItem) {
   return null;
 }
 
-export function Topbar({ user }: TopbarProps) {
-  const pathname = usePathname();
+export function Topbar({ onOpenSidebar, user }: TopbarProps) {
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [organizationName, setOrganizationName] = useState("");
+  const [tenantPropertyName, setTenantPropertyName] = useState("");
   const [updatingNotificationId, setUpdatingNotificationId] = useState<string | null>(null);
 
+  useToastMessages({ error });
+
   const unreadCount = useMemo(() => notifications.filter((notification) => !notification.isRead).length, [notifications]);
+  const headerContext = useMemo(() => {
+    if (user?.role === "TENANT") {
+      return {
+        subtitle: organizationName,
+        title: tenantPropertyName || "Assigned property",
+      };
+    }
+
+    if (user?.role === "VENDOR") {
+      return {
+        subtitle: "",
+        title: organizationName || "Vendor workspace",
+      };
+    }
+
+    return {
+      subtitle: "",
+      title: organizationName || "Workspace",
+    };
+  }, [organizationName, tenantPropertyName, user?.role]);
+
+  const loadHeaderContext = useCallback(async () => {
+    try {
+      const [profileResponse, organizationResponse] = await Promise.all([
+        user?.role === "TENANT" ? apiGet<HeaderProfile>("/auth/profile").catch(() => null) : Promise.resolve(null),
+        apiGet<HeaderOrganization>("/organizations/me").catch(() => null),
+      ]);
+
+      setTenantPropertyName(profileResponse?.profile?.propertyName || "");
+      setOrganizationName(organizationResponse?.name || "");
+    } catch {
+      setTenantPropertyName("");
+      setOrganizationName("");
+    }
+  }, [user]);
 
   const loadNotifications = async () => {
     setIsLoadingNotifications(true);
@@ -80,10 +127,21 @@ export function Topbar({ user }: TopbarProps) {
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
       void loadNotifications();
+      void loadHeaderContext();
     }, 0);
 
     return () => window.clearTimeout(loadTimer);
-  }, []);
+  }, [loadHeaderContext]);
+
+  useEffect(() => {
+    const refreshHeaderContext = () => {
+      void loadHeaderContext();
+    };
+
+    window.addEventListener(headerContextChangedEvent, refreshHeaderContext);
+
+    return () => window.removeEventListener(headerContextChangedEvent, refreshHeaderContext);
+  }, [loadHeaderContext]);
 
   useEffect(() => {
     const closePanelOnOutsideClick = (event: MouseEvent) => {
@@ -165,18 +223,20 @@ export function Topbar({ user }: TopbarProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-divider bg-white">
       <div className="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <Link className="flex items-center gap-3 lg:hidden" href="/app/dashboard">
-          <Image alt="Rentora" className="h-auto w-28" height={959} src="/logo.png" width={3867} />
-        </Link>
+        <button
+          aria-label="Open navigation"
+          className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-primary transition hover:border-text-muted hover:bg-surface-muted lg:hidden"
+          onClick={onOpenSidebar}
+          type="button"
+        >
+          <FiMenu aria-hidden="true" size={20} />
+        </button>
 
-        <div className="hidden items-center gap-3 sm:flex">
-          <div className="flex size-9 items-center justify-center rounded-md bg-primary-soft text-sm font-bold text-primary">
-            {(user?.name || "R").slice(0, 1).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-text-primary">{user?.name || "Rentora user"}</p>
-            <p className="truncate text-xs font-medium text-text-muted">{user?.role?.toLowerCase() || "workspace"}</p>
-          </div>
+        <div className="min-w-0">
+          <p className="truncate text-xl font-bold leading-7 text-text-primary">{headerContext.title}</p>
+          {headerContext.subtitle ? (
+            <p className="truncate text-xs font-semibold leading-4 text-text-muted">{headerContext.subtitle}</p>
+          ) : null}
         </div>
 
         <div className="ml-auto flex items-center gap-2" ref={panelRef}>
@@ -221,8 +281,6 @@ export function Topbar({ user }: TopbarProps) {
                 </div>
               </div>
 
-              {error ? <div className="border-b border-divider px-4 py-3 text-xs font-medium text-danger">{error}</div> : null}
-
               <div className="max-h-[420px] overflow-y-auto">
                 {isLoadingNotifications && !notifications.length ? (
                   <div className="px-4 py-10 text-center text-sm font-medium text-text-secondary">Loading notifications...</div>
@@ -262,27 +320,6 @@ export function Topbar({ user }: TopbarProps) {
           ) : null}
         </div>
       </div>
-
-      <nav className="flex gap-1 overflow-x-auto border-t border-divider px-4 py-2 lg:hidden">
-        {appNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-
-          return (
-            <Link
-              className={[
-                "inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold transition",
-                isActive ? "bg-primary text-white" : "text-text-primary hover:bg-surface-muted",
-              ].join(" ")}
-              href={item.href}
-              key={item.href}
-            >
-              <Icon aria-hidden="true" size={16} />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
     </header>
   );
 }

@@ -10,7 +10,6 @@ import {
   CardTitle,
   Dropdown,
   FiAlertCircle,
-  FiCheck,
   FiEdit3,
   FiHome,
   FiPlus,
@@ -18,6 +17,7 @@ import {
   FiTrash2,
   TextField,
 } from "@/components/ui";
+import { useToastMessages } from "@/components/app/toast-provider";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/client";
 import type { PropertyItem, RequestItem, UnitItem } from "@/lib/api/types";
 
@@ -117,6 +117,8 @@ export function PropertiesPage() {
   const [unitForm, setUnitForm] = useState<UnitFormState>(emptyUnitForm);
   const [units, setUnits] = useState<UnitItem[]>([]);
   const [updatingAction, setUpdatingAction] = useState<string | null>(null);
+
+  useToastMessages({ error, success });
 
   const selectedProperty = useMemo(() => {
     return properties.find((property) => property._id === selectedPropertyId) || properties[0] || null;
@@ -411,7 +413,7 @@ export function PropertiesPage() {
         </div>
       </div>
 
-      <section className="grid grid-flow-col auto-cols-[minmax(190px,1fr)] gap-3 overflow-x-auto pb-1">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Card className="p-4 shadow-sm">
           <p className="text-xs font-semibold text-text-secondary">Properties</p>
           <p className="mt-2 text-2xl font-bold text-text-primary">{loadState === "loading" ? "..." : totals.properties}</p>
@@ -433,18 +435,6 @@ export function PropertiesPage() {
           <p className="mt-2 text-2xl font-bold text-text-primary">{loadState === "loading" ? "..." : totals.activeRequests}</p>
         </Card>
       </section>
-
-      {success ? (
-        <div className="rounded-md border border-success bg-success-soft px-4 py-3 text-sm font-medium text-success">
-          {success}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-          {error}
-        </div>
-      ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <div className="grid content-start gap-6">

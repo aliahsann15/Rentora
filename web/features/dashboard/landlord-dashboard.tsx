@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useToastMessages } from "@/components/app/toast-provider";
 import {
   Button,
   Card,
@@ -131,6 +132,7 @@ export function LandlordDashboard() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("idle");
+  useToastMessages({ error });
 
   const loadDashboard = async () => {
     setLoadState("loading");
@@ -224,13 +226,7 @@ export function LandlordDashboard() {
         </div>
       </div>
 
-      {error ? (
-        <div className="rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-          {error}
-        </div>
-      ) : null}
-
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <MetricTile icon={LuBuilding2} label="Properties" value={loadState === "loading" ? "..." : String(data.properties.length)} />
         <MetricTile icon={FiHome} label="Total units" value={loadState === "loading" ? "..." : String(data.units.length)} />
         <MetricTile icon={FiCheck} label="Occupied units" tone="success" value={loadState === "loading" ? "..." : String(summary.occupiedUnits)} />
@@ -241,7 +237,7 @@ export function LandlordDashboard() {
         <MetricTile icon={FiUsers} label="Tenants and vendors" value={loadState === "loading" ? "..." : String(data.tenants.length + data.vendors.length)} />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-[1.25fr_0.75fr]">
         <Card elevated>
           <CardHeader
             action={

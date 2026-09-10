@@ -10,3 +10,7 @@ dist/
 
 # Ignore Firebase service account key file
 /rentora-fcm-service-account.json
+
+# Runtime media uploads
+media/
+src/media/

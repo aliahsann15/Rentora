@@ -33,7 +33,7 @@ export function CardHeader({
 export function CardTitle({ className = "", ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
-      className={["text-base font-bold leading-6 text-text-primary", className].join(" ")}
+      className={["text-lg font-bold leading-7 text-text-primary sm:text-xl", className].join(" ")}
       {...props}
     />
   );

@@ -1,6 +1,18 @@
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
-import { Invite, Organization, Property, RefreshToken, Unit, User } from '../models'
+import {
+  ActivityLog,
+  FcmToken,
+  Invite,
+  MaintenanceRequest,
+  Notification,
+  Organization,
+  Property,
+  RefreshToken,
+  Unit,
+  User,
+  Vendor
+} from '../models'
 import {
   getTokenExpiryDate,
   signAccessToken,
@@ -9,6 +21,7 @@ import {
 } from '../utils/auth'
 import { getBearerToken } from '../utils/requestContext'
 import { sendEmail } from '../services/emailService'
+import { getMediaCategoryForUserRole, storeMediaFile } from '../utils/mediaStorage'
 
 const buildAuthPayload = (user: {
   _id: string
@@ -406,8 +419,19 @@ export const updateMyProfile = async (req: Request, res: Response): Promise<Resp
       user.email = normalizedEmail
     }
 
-    if (typeof profileImage === 'string') {
-      user.avatar = profileImage.trim()
+    if (req.file) {
+      user.avatar = await storeMediaFile({
+        buffer: req.file.buffer,
+        category: getMediaCategoryForUserRole(user.role),
+        mimeType: req.file.mimetype,
+        originalName: req.file.originalname,
+        ownerEmail: user.email,
+        ownerId: user._id.toString(),
+        ownerName: user.name,
+        purpose: 'profile-image'
+      })
+    } else if (typeof profileImage === 'string' && profileImage.trim()) {
+      return res.status(400).json({ message: 'Profile images must be uploaded as a file' })
     }
 
     await user.save()
@@ -428,9 +452,126 @@ export const updateMyProfile = async (req: Request, res: Response): Promise<Resp
       }
     }
 
-    return res.status(200).json({ message: 'Profile updated successfully' })
+    return res.status(200).json({
+      message: 'Profile updated successfully',
+      profile: {
+        fullName: user.name,
+        email: user.email,
+        profileImage: user.avatar || undefined
+      }
+    })
   } catch (error) {
     return res.status(500).json({ message: 'Failed to update profile', error })
+  }
+}
+
+export const deleteMyAccount = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const userId = req.user?.userId
+    const organizationId = req.user?.organizationId
+
+    if (!userId || !organizationId) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const user = await User.findOne({ _id: userId, organizationId })
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    if (user.role === 'LANDLORD') {
+      const organization = await Organization.findOne({
+        _id: organizationId,
+        ownerId: user._id
+      }).select('_id')
+
+      if (!organization) {
+        return res.status(403).json({ message: 'Only the organization owner can delete this landlord account' })
+      }
+
+      const organizationUsers = await User.find({ organizationId }).select('_id')
+      const organizationUserIds = organizationUsers.map((organizationUser) => organizationUser._id)
+
+      await Promise.all([
+        ActivityLog.deleteMany({ organizationId }),
+        FcmToken.deleteMany({ userId: { $in: organizationUserIds } }),
+        Invite.deleteMany({ organizationId }),
+        MaintenanceRequest.deleteMany({ organizationId }),
+        Notification.deleteMany({ organizationId }),
+        Property.deleteMany({ organizationId }),
+        RefreshToken.deleteMany({ userId: { $in: organizationUserIds } }),
+        Unit.deleteMany({ organizationId }),
+        Vendor.deleteMany({ organizationId })
+      ])
+
+      await User.deleteMany({ organizationId })
+      await Organization.deleteOne({ _id: organizationId })
+
+      return res.status(200).json({ message: 'Account and organization deleted' })
+    }
+
+    if (user.role === 'TENANT') {
+      await Unit.updateMany(
+        { organizationId, tenantId: user._id },
+        { $unset: { tenantId: 1 }, $set: { status: 'VACANT' } }
+      )
+
+      const tenantRequests = await MaintenanceRequest.find({
+        organizationId,
+        tenantId: user._id
+      }).select('_id')
+
+      const tenantRequestIds = tenantRequests.map((request) => request._id.toString())
+
+      await MaintenanceRequest.deleteMany({ organizationId, tenantId: user._id })
+
+      if (tenantRequestIds.length > 0) {
+        await Notification.deleteMany({
+          organizationId,
+          referenceId: { $in: tenantRequestIds }
+        })
+      }
+
+      await Invite.deleteMany({
+        organizationId,
+        role: 'TENANT',
+        email: user.email.toLowerCase()
+      })
+    }
+
+    if (user.role === 'VENDOR') {
+      const vendors = await Vendor.find({ organizationId, userId: user._id }).select('_id')
+      const vendorIds = vendors.map((vendor) => vendor._id)
+
+      if (vendorIds.length > 0) {
+        await MaintenanceRequest.updateMany(
+          { organizationId, vendorId: { $in: vendorIds }, status: 'ASSIGNED' },
+          { $unset: { vendorId: '', assignedAt: '' }, $set: { status: 'NEW' } }
+        )
+
+        await MaintenanceRequest.updateMany(
+          { organizationId, vendorId: { $in: vendorIds }, status: { $ne: 'ASSIGNED' } },
+          { $unset: { vendorId: '', assignedAt: '' } }
+        )
+
+        await Vendor.deleteMany({ organizationId, userId: user._id })
+      }
+
+      await Invite.deleteMany({
+        organizationId,
+        role: 'VENDOR',
+        email: user.email.toLowerCase()
+      })
+    }
+
+    await Notification.deleteMany({ organizationId, userId: user._id })
+    await FcmToken.deleteMany({ userId: user._id })
+    await RefreshToken.deleteMany({ userId: user._id })
+    await User.deleteOne({ _id: user._id, organizationId })
+
+    return res.status(200).json({ message: 'Account deleted' })
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to delete account', error })
   }
 }
 

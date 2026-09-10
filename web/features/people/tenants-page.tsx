@@ -16,6 +16,7 @@ import {
   FiTrash2,
   TextField,
 } from "@/components/ui";
+import { useToastMessages } from "@/components/app/toast-provider";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/client";
 import type { UnitItem, UserItem } from "@/lib/api/types";
 import { type AuthFieldErrors, validateEmail, validateOptionalPhone, validateRequired } from "@/lib/auth/validation";
@@ -74,6 +75,8 @@ export function TenantsPage() {
   const [tenants, setTenants] = useState<UserItem[]>([]);
   const [units, setUnits] = useState<UnitItem[]>([]);
   const [updatingAction, setUpdatingAction] = useState<string | null>(null);
+
+  useToastMessages({ error, success });
 
   const loadTenants = async () => {
     setLoadState("loading");
@@ -276,18 +279,6 @@ export function TenantsPage() {
           Add tenant
         </Button>
       </div>
-
-      {success ? (
-        <div className="rounded-md border border-success bg-success-soft px-4 py-3 text-sm font-medium text-success">
-          {success}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-md border border-danger bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-          {error}
-        </div>
-      ) : null}
 
       <Card elevated>
         <CardHeader>
