@@ -4,6 +4,7 @@ import type { AuthResponse, InviteValidationResponse } from "./types";
 type LoginPayload = {
   email: string;
   password: string;
+  rememberMe: boolean;
 };
 
 async function readJson<T>(response: Response): Promise<T | null> {
@@ -15,9 +16,12 @@ async function postJson<TResponse, TPayload extends object>(
   payload: TPayload
 ): Promise<TResponse> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    credentials: "same-origin",
+    cache: "no-store",
     body: JSON.stringify(payload),
     headers: {
       "Content-Type": "application/json",
+      "X-Rentora-Request": "1",
     },
     method: "POST",
   });
@@ -36,7 +40,7 @@ async function postJson<TResponse, TPayload extends object>(
 }
 
 function assertAuthResponse(data: AuthResponse, message: string): AuthResponse {
-  if (!data.user || !data.accessToken || !data.refreshToken) {
+  if (!data.user) {
     throw new Error(message);
   }
 

@@ -44,9 +44,10 @@ export function LoginForm() {
       const response = await loginWithPassword({
         email: email.trim().toLowerCase(),
         password,
+        rememberMe,
       });
 
-      saveAuthSession({ ...response, rememberMe });
+      saveAuthSession(response);
       window.location.assign(getPostLoginPath(response.user.role));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Unable to sign in. Please try again.");

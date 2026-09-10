@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
+import { JsonWebTokenError } from 'jsonwebtoken'
 import { verifyToken } from '../utils/auth'
 import { User } from '../models'
 
@@ -44,6 +45,10 @@ export const authenticateJWT = async (
 
     next()
   } catch (error) {
-    res.status(401).json({ message: 'Unauthorized', error })
+    if (error instanceof JsonWebTokenError) {
+      res.status(401).json({ message: 'Unauthorized' })
+      return
+    }
+    res.status(503).json({ message: 'Unable to verify session. Please retry.' })
   }
 }

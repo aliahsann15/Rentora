@@ -1,5 +1,13 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Authentication Configuration
+
+Rentora web uses HttpOnly cookie sessions and a Next.js BFF. Configure server-only
+`BACKEND_API_URL` and `BFF_SESSION_SECRET` before starting; production also requires
+HTTPS and `APP_ORIGIN`. See [Web Sessions And BFF](../docs/WEB_SESSIONS.md) for setup,
+deployment requirements, compatibility notes, and tests. `NEXT_PUBLIC_API_URL` is
+no longer used by the web app.
+
 ## Getting Started
 
 First, run the development server:

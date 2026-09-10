@@ -1,6 +1,5 @@
 import { API_BASE_URL } from "./config";
-import { refreshStoredAccessToken } from "@/lib/auth/refresh";
-import { clearAuthSession, getAccessToken } from "@/lib/auth/storage";
+import { clearAuthSession } from "@/lib/auth/storage";
 
 type ApiErrorPayload = {
   message?: string;
@@ -10,12 +9,10 @@ async function readJson<T>(response: Response): Promise<T | null> {
   return response.json().catch(() => null) as Promise<T | null>;
 }
 
-function getHeaders(headers?: HeadersInit, token = getAccessToken()): Headers {
+function getHeaders(headers?: HeadersInit): Headers {
   const nextHeaders = new Headers(headers);
 
-  if (token) {
-    nextHeaders.set("Authorization", `Bearer ${token}`);
-  }
+  nextHeaders.set("X-Rentora-Request", "1");
 
   return nextHeaders;
 }
@@ -45,35 +42,20 @@ async function requestWithAuth<TResponse>(
   init: RequestInit,
   fallbackMessage: string,
 ): Promise<TResponse> {
-  const request = (token?: string | null) =>
-    fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      headers: getHeaders(init.headers, token),
-    });
-
-  const response = await request();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    credentials: "same-origin",
+    cache: "no-store",
+    headers: getHeaders(init.headers),
+  });
 
   if (response.status !== 401) {
     return parseResponse<TResponse>(response, fallbackMessage);
   }
 
-  const refreshedAccessToken = await refreshStoredAccessToken();
-
-  if (!refreshedAccessToken) {
-    clearAuthSession();
-    redirectToLogin();
-    throw new Error("Your session expired. Please sign in again.");
-  }
-
-  const retryResponse = await request(refreshedAccessToken);
-
-  if (retryResponse.status === 401) {
-    clearAuthSession();
-    redirectToLogin();
-    throw new Error("Your session expired. Please sign in again.");
-  }
-
-  return parseResponse<TResponse>(retryResponse, fallbackMessage);
+  clearAuthSession();
+  redirectToLogin();
+  throw new Error("Your session expired. Please sign in again.");
 }
 
 export async function apiGet<TResponse>(path: string): Promise<TResponse> {

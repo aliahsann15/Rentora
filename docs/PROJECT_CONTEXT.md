@@ -161,7 +161,7 @@ Stack:
 - Next.js 16 App Router, React 19, TypeScript.
 - Tailwind CSS v4 tokens via `globals.css`.
 - Fetch-based API helpers.
-- Browser local/session storage for tokens and cached user.
+- Encrypted HttpOnly cookie sessions through a same-origin Next.js BFF; user rendering cache is in memory.
 
 App shape:
 
@@ -189,10 +189,13 @@ Important routes:
 
 Web API layer:
 
-- `web/lib/api/config.ts`: default API base is `http://localhost:5000/api` unless `NEXT_PUBLIC_API_URL` is set.
-- `web/lib/api/client.ts`: `apiGet`, `apiPost`, `apiPatch`, `apiDelete`, adds bearer token, clears session and redirects to `/login` on `401`.
-- `web/lib/auth/storage.ts`: stores tokens and auth user in localStorage or sessionStorage, emits auth-user-change events.
-- `web/lib/auth/routes.ts`: post-login routing currently returns tenant/vendor paths that do not yet exist in `web/app/app`; landlord dashboard exists.
+- `web/lib/api/config.ts`: browser API base is `/api`; `BACKEND_API_URL` is server-only.
+- `web/lib/api/client.ts`: cookie-authenticated API helpers; redirects to login only on a final BFF `401`.
+- `web/lib/server/`: encrypted cookie handling, allowlisted backend proxy, server-side refresh, and CSRF checks.
+- `web/lib/auth/storage.ts`: in-memory user rendering cache and legacy credential cleanup; no browser token storage.
+- `web/app/media/[...path]/route.ts`: same-origin proxy for backend media without changing storage.
+- Deployment, session lifetime, mobile compatibility, and test commands: [Web Sessions And BFF](WEB_SESSIONS.md).
+- `web/lib/auth/routes.ts`: post-login routing returns `/app/dashboard`.
 
 Implemented web feature focus:
 

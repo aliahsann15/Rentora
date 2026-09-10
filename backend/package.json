@@ -8,6 +8,7 @@
     "build": "tsc",
     "seed:data": "npm run build && node scripts/seed-demo.js",
     "start": "node dist/server.js",
+    "test:session": "npm run build && node --test tests/session.test.cjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

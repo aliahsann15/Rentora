@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
+import { JsonWebTokenError } from 'jsonwebtoken'
 import {
   ActivityLog,
   FcmToken,
@@ -279,12 +280,12 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
       return res.status(400).json({ message: 'refreshToken is required' })
     }
 
+    const decoded = verifyToken(refreshToken)
     const tokenDoc = await RefreshToken.findOne({ token: refreshToken })
     if (!tokenDoc || tokenDoc.expiresAt < new Date()) {
       return res.status(401).json({ message: 'Invalid refresh token' })
     }
 
-    const decoded = verifyToken(refreshToken)
     const user = await User.findById(decoded.userId)
     if (!user || !user.isActive) {
       await RefreshToken.deleteOne({ _id: tokenDoc._id })
@@ -299,7 +300,10 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
 
     return res.status(200).json({ accessToken })
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid refresh token', error })
+    if (error instanceof JsonWebTokenError) {
+      return res.status(401).json({ message: 'Invalid refresh token' })
+    }
+    return res.status(503).json({ message: 'Unable to renew session. Please retry.' })
   }
 }
 
@@ -319,20 +323,18 @@ export const logout = async (req: Request, res: Response): Promise<Response> => 
 
 export const getMe = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const token = getBearerToken(req)
-    if (!token) {
+    if (!req.user?.userId) {
       return res.status(401).json({ message: 'Unauthorized' })
     }
 
-    const decoded = verifyToken(token)
-    const user = await User.findById(decoded.userId).select('-passwordHash')
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' })
+    const user = await User.findById(req.user.userId).select('-passwordHash')
+    if (!user || !user.isActive) {
+      return res.status(401).json({ message: 'Unauthorized' })
     }
 
     return res.status(200).json({ user })
-  } catch (error) {
-    return res.status(401).json({ message: 'Unauthorized', error })
+  } catch {
+    return res.status(503).json({ message: 'Unable to load session. Please retry.' })
   }
 }
 
@@ -642,6 +644,9 @@ export const getMyTenantAssignment = async (req: Request, res: Response): Promis
       unitNumber: assignedUnit.unitNumber
     })
   } catch (error) {
-    return res.status(401).json({ message: 'Unauthorized', error })
+    if (error instanceof JsonWebTokenError) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+    return res.status(503).json({ message: 'Unable to load unit assignment. Please retry.' })
   }
 }
